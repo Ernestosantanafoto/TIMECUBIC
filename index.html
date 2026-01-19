@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TIMECUBE V25 - Nivel 7 Added</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TIMECUBE V26 - Mobile Ready</title>
     <style>
         body {
             background-color: #111;
@@ -15,7 +16,9 @@
             margin: 0;
             font-family: monospace;
             overflow: hidden;
-            user-select: none;
+            user-select: none; /* Evita seleccionar texto al tocar */
+            -webkit-user-select: none;
+            touch-action: none; /* Evita gestos del navegador */
         }
 
         /* --- LAYOUT PRINCIPAL --- */
@@ -24,6 +27,10 @@
             flex-direction: row;
             align-items: flex-start;
             gap: 20px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            padding-top: 20px;
         }
 
         .center-area {
@@ -33,7 +40,18 @@
             position: relative; 
         }
 
-        /* --- BARRA LATERAL --- */
+        /* --- CANVAS RESPONSIVO --- */
+        canvas {
+            background-color: #1a1a1a;
+            border: 4px solid #888;
+            cursor: crosshair;
+            max-width: 95vw; /* No pasar del ancho de pantalla */
+            max-height: 60vh; /* Dejar espacio para controles */
+            width: auto;
+            height: auto;
+        }
+
+        /* --- BARRA LATERAL (Responsive) --- */
         #sidebar {
             display: flex;
             flex-direction: column;
@@ -43,140 +61,107 @@
             border-radius: 8px;
             gap: 8px;
             width: 150px; 
+            max-height: 90vh;
+            overflow-y: auto; /* Scroll si la pantalla es bajita */
         }
 
+        /* --- CONTROLES TÁCTILES (GAMEPAD) --- */
+        #mobileControls {
+            display: none; /* Se activa con media query */
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            pointer-events: none; /* Para ver a través */
+            z-index: 100;
+        }
+
+        .touch-btn {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            pointer-events: auto; /* Los botones sí reciben toques */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            color: rgba(255, 255, 255, 0.8);
+            user-select: none;
+        }
+        .touch-btn:active { background: rgba(0, 255, 255, 0.4); color: white; }
+
+        /* Posiciones de botones */
+        #btnLeft { bottom: 20px; left: 20px; }
+        #btnRight { bottom: 20px; left: 90px; }
+        #btnJump { bottom: 20px; right: 20px; width: 70px; height: 70px; background: rgba(0, 255, 0, 0.15); }
+        #btnNext { bottom: 100px; right: 20px; width: 50px; height: 50px; font-size: 1em; background: rgba(255, 255, 0, 0.15); }
+        #btnReset { top: -350px; right: 0px; width: 40px; height: 40px; font-size: 0.8em; border-radius: 5px; background: rgba(255, 0, 0, 0.3); }
+
+        /* --- ESTILOS GENERALES --- */
         .tool-btn {
-            background: #333;
-            border: 1px solid #666;
-            color: #aaa;
-            padding: 10px;
-            cursor: pointer;
-            text-align: left;
-            font-family: monospace;
-            font-size: 0.9rem;
-            transition: 0.2s;
+            background: #333; border: 1px solid #666; color: #aaa; padding: 10px;
+            cursor: pointer; text-align: left; font-family: monospace; font-size: 0.9rem;
         }
-        .tool-btn:hover { background: #444; color: #fff; }
-        .tool-btn.active { 
-            background: cyan; color: #000; border-color: cyan; font-weight: bold; 
-            box-shadow: 0 0 10px rgba(0,255,255,0.3);
-        }
+        .tool-btn.active { background: cyan; color: #000; border-color: cyan; font-weight: bold; }
         
-        .action-group {
-            margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; display: flex; flex-direction: column; gap: 5px;
-        }
-        .btn-action {
-            border: 1px solid #FFD700; color: #FFD700; background: transparent; padding: 8px; cursor: pointer; text-align: center;
-        }
-        .btn-action:hover { background: #FFD700; color: #000; }
-
-        .lives-control {
-            display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 5px; border: 1px solid #444;
-        }
+        .action-group { margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .btn-action { border: 1px solid #FFD700; color: #FFD700; background: transparent; padding: 8px; cursor: pointer; text-align: center; }
+        
+        .lives-control { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 5px; border: 1px solid #444; }
         .mini-btn { background: #333; color: cyan; border: none; width: 25px; cursor: pointer; }
         .lives-val { color: cyan; font-weight: bold; }
 
-        /* --- COLOR PICKER --- */
-        .color-label { font-size: 0.7em; color: #888; margin-top: 5px; }
-        .color-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            margin-bottom: 5px;
-        }
-        .color-swatch {
-            width: 100%;
-            height: 25px;
-            border: 2px solid #444;
-            cursor: pointer;
-        }
-        .color-swatch.selected {
-            border-color: #fff;
-            box-shadow: 0 0 5px white;
-            transform: scale(1.1);
-        }
+        .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 5px; }
+        .color-swatch { width: 100%; height: 25px; border: 2px solid #444; cursor: pointer; }
+        .color-swatch.selected { border-color: #fff; box-shadow: 0 0 5px white; transform: scale(1.1); }
 
-        /* --- JUEGO --- */
-        canvas {
-            background-color: #1a1a1a;
-            border: 4px solid #888;
-            cursor: crosshair; 
-        }
-
-        #topInfo {
-            width: 100%; text-align: center; margin-bottom: 10px;
-            font-size: 1.2rem; color: cyan; font-weight: bold; text-shadow: 0 0 5px cyan;
-        }
-
+        #topInfo { width: 100%; text-align: center; margin-bottom: 5px; font-size: 1.2rem; color: cyan; font-weight: bold; }
         #mensajeVictoria { 
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border: 2px solid #0f0;
-            color: #0f0; 
-            font-size: 2em; 
-            font-weight: bold; 
-            text-shadow: 0 0 10px #0f0;
-            display: none; 
-            z-index: 100;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid #0f0; color: #0f0; 
+            font-size: 1.5em; font-weight: bold; display: none; z-index: 100;
         }
 
-        /* --- MENÚS --- */
-        .screen {
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; height: 100%; position: absolute; top:0; left:0; background: #111; z-index: 10;
-        }
+        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; position: absolute; top:0; left:0; background: #111; z-index: 10; }
         .screen.active { display: flex; }
+        pre { color: cyan; font-weight: bold; line-height: 10px; margin-bottom: 40px; text-shadow: 0 0 10px cyan; font-size: 0.8em; } /* Fuente más pequeña para que quepa */
 
-        pre { color: cyan; font-weight: bold; line-height: 10px; margin-bottom: 40px; text-shadow: 0 0 10px cyan; }
+        .btn-main { background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px 30px; font-size: 1.2rem; margin: 10px; min-width: 200px; }
+        .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-height: 60vh; overflow-y: auto; padding: 10px; }
+        .level-btn { width: 70px; height: 70px; border: 2px solid #555; background: #222; color: #fff; font-size: 1.5em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .level-btn.completed { border-color: #0f0; color: #0f0; }
+        .btn-back { color: #ff4444; background: none; border: none; font-size: 1rem; margin-top: 20px; font-weight: bold; text-transform: uppercase; }
 
-        .btn-main {
-            background: transparent; border: 2px solid #FFD700; color: #FFD700;
-            padding: 15px 30px; font-size: 1.2rem; cursor: pointer; margin: 10px; min-width: 200px;
+        /* --- MEDIA QUERY PARA MÓVILES --- */
+        @media (max-width: 800px) {
+            #mainLayout { flex-direction: column; align-items: center; }
+            #sidebar { display: none !important; } /* Ocultar editor en móvil si jugamos */
+            #gameUI { display: none; } /* Ocultar textos de teclado */
+            #mobileControls { display: block; } /* Mostrar controles táctiles */
+            canvas { width: 95vw; }
+            
+            /* Ajustes editor en móvil (si se fuerza) */
+            #sidebar.mobile-editor-mode { display: flex !important; width: 90%; margin-top: 10px; }
         }
-        .btn-main:hover { background: #FFD700; color: #000; box-shadow: 0 0 15px #FFD700; }
-
-        .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        
-        .level-btn {
-            width: 80px; height: 80px; border: 2px solid #555; background: #222; color: #fff;
-            font-size: 1.5em; cursor: pointer; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-        }
-        .level-btn.completed { border-color: #0f0; color: #0f0; box-shadow: 0 0 10px #0f0; }
-        .btn-back { color: #ff4444; background: none; border: none; font-size: 1rem; cursor: pointer; margin-top: 20px; font-weight: bold; text-decoration: none; text-transform: uppercase;}
-        .btn-back:hover { text-shadow: 0 0 8px red; color: #fff;}
-
-        /* UI JUEGO */
-        #gameUI { margin-top: 10px; text-align: center; font-size: 0.9em; width: 600px;}
-        .tecla { background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; }
-        .nav-mini { 
-            border: none; color: #ff4444; background: none; cursor: pointer; margin-left: 10px; padding: 4px 10px; font-weight: bold; text-transform: uppercase; font-family: monospace;
-        }
-        .nav-mini:hover { color: #fff; text-shadow: 0 0 5px red; }
-
     </style>
 </head>
 <body>
 
     <div id="menuScreen" class="screen active">
 <pre>
-████████╗██╗███╗   ███╗███████╗
-╚══██╔══╝██║████╗ ████║██╔════╝
-   ██║   ██║██╔████╔██║█████╗  
-   ██║   ██║██║╚██╔╝██║██╔══╝  
-   ██║   ██║██║ ╚═╝ ██║███████╗
-   ╚═╝   ╚═╝╚═╝     ╚═╝╚══════╝
+TIMECUBE
+MOBILE V26
 </pre>
         <button class="btn-main" onclick="irPantallaNiveles()">JUGAR</button>
         <button class="btn-main" onclick="iniciarEditor()" style="border-color:cyan; color:cyan;">EDITOR</button>
     </div>
 
     <div id="levelScreen" class="screen">
-        <h2 style="color:cyan;">SELECCIONA NIVEL</h2>
+        <h2 style="color:cyan;">NIVELES</h2>
         <div class="level-grid" id="gridNiveles"></div>
         <button class="btn-back" onclick="irMenuPrincipal()">[ VOLVER ]</button>
     </div>
@@ -185,106 +170,81 @@
         
         <div class="center-area">
             <div id="topInfo">CUBOS: 0 / 0</div>
-            <div id="mensajeVictoria">¡NIVEL COMPLETADO!</div>
+            <div id="mensajeVictoria">¡COMPLETADO!</div>
+            
             <canvas id="miCanvas" width="600" height="390"></canvas>
             
+            <div id="mobileControls">
+                <div class="touch-btn" id="btnLeft">←</div>
+                <div class="touch-btn" id="btnRight">→</div>
+                <div class="touch-btn" id="btnJump">↑</div>
+                <div class="touch-btn" id="btnNext">clone</div>
+                <div class="touch-btn" id="btnReset">R</div>
+                <div class="touch-btn" onclick="irMenuPrincipal()" style="top:-350px; left:0px; width:40px; height:40px; font-size:0.8em; border-radius:5px; border-color:#555;">M</div>
+            </div>
+
             <div id="gameUI">
                 <span class="tecla">W</span> SALTAR | <span class="tecla">A D</span> MOVER | <span class="tecla">↓</span> SIGUIENTE | <span class="tecla">ESPACIO</span> REINICIAR
                 <span id="gameNavButtons">
-                    <button class="nav-mini" onclick="irPantallaNiveles()">NIVELES</button>
-                    <button class="nav-mini" onclick="irMenuPrincipal()">MENU</button>
+                    <button class="nav-mini" onclick="irPantallaNiveles()" style="border:none; color:#ff4444; background:none; cursor:pointer; font-weight:bold;">NIVELES</button>
+                    <button class="nav-mini" onclick="irMenuPrincipal()" style="border:none; color:#ff4444; background:none; cursor:pointer; font-weight:bold;">MENU</button>
                 </span>
             </div>
         </div>
 
         <div id="sidebar">
-            <div style="font-size:0.8em; color:#666; text-align:center; margin-bottom:5px;">HERRAMIENTAS</div>
-            
+            <div style="font-size:0.8em; color:#666; text-align:center;">HERRAMIENTAS</div>
             <button class="tool-btn active" onclick="setTool('muro')">[█] MURO</button>
             <button class="tool-btn" onclick="setTool('meta')">[★] META</button>
             <button class="tool-btn" onclick="setTool('borrar')">[X] BORRAR</button>
-            
             <div class="color-label">CANAL LÓGICO:</div>
-            <div class="color-grid" id="colorGrid">
-                </div>
-
+            <div class="color-grid" id="colorGrid"></div>
             <button class="tool-btn" id="btnToolPuerta" onclick="setTool('puerta')">[∏] PUERTA</button>
             <button class="tool-btn" id="btnToolBoton" onclick="setTool('boton')">[_] BOTÓN</button>
-
             <div class="lives-control">
                 <span style="font-size:0.8em; color:#aaa;">CUBOS</span>
                 <button class="mini-btn" onclick="cambiarVidas(-1)">-</button>
                 <span class="lives-val" id="vidasDisplay">4</span>
                 <button class="mini-btn" onclick="cambiarVidas(1)">+</button>
             </div>
-
             <button class="tool-btn" onclick="editarTexto()">[T] TEXTO</button>
-
             <div class="action-group">
                 <button class="btn-action" onclick="togglePlayEdit()" id="btnSimular">▶ PROBAR</button>
                 <button class="btn-action" onclick="exportarNivel()">EXPORTAR</button>
                 <button class="btn-action" onclick="irMenuPrincipal()" style="border-color:#555; color:#aaa;">SALIR</button>
             </div>
         </div>
-
     </div>
 
     <script>
         const COLORES_LOGICOS = ['#FF0000', '#00FF00', '#0044FF', '#FFFF00', '#00FFFF', '#FF00FF'];
         let colorSeleccionado = 0; 
 
-        // --- BASE DE DATOS DE NIVELES (7 NIVELES) ---
-        // --- BASE DE DATOS DE NIVELES (CAMPAÑA EXTENDIDA V25) ---
+        // --- BASE DE DATOS (20 NIVELES: 7 Tuyos + 13 Nuevos) ---
         const NIVELES_DB = [
-            // --- TUTORIALES (1-7) ---
-            {"paredes":[],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"1. La sencillez...","puertas":[],"botones":[]},
-            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"2. El obstáculo","puertas":[],"botones":[]},
-            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"3. ¿Llegas solo?","puertas":[],"botones":[]},
-            {"paredes":[{"x":180,"y":360,"w":30,"h":30},{"x":180,"y":330,"w":30,"h":30},{"x":180,"y":300,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":240,"y":300,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":360,"y":180,"w":30,"h":30},{"x":390,"y":180,"w":30,"h":30},{"x":390,"y":210,"w":30,"h":30},{"x":390,"y":240,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":390,"y":300,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30},{"x":360,"y":360,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":300,"y":360,"w":30,"h":30},{"x":270,"y":360,"w":30,"h":30},{"x":240,"y":360,"w":30,"h":30},{"x":210,"y":360,"w":30,"h":30},{"x":210,"y":330,"w":30,"h":30},{"x":240,"y":330,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":360,"w":30,"h":30},{"x":480,"y":150,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":360,"w":30,"h":30},{"x":510,"y":30,"w":30,"h":30},{"x":540,"y":30,"w":30,"h":30},{"x":540,"y":60,"w":30,"h":30},{"x":540,"y":90,"w":30,"h":30},{"x":540,"y":120,"w":30,"h":30},{"x":540,"y":150,"w":30,"h":30},{"x":540,"y":180,"w":30,"h":30},{"x":540,"y":210,"w":30,"h":30},{"x":540,"y":240,"w":30,"h":30},{"x":540,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"4. El laberinto","puertas":[],"botones":[]},
-            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":360,"y":270,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30}],"meta":{"x":420,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"5. Lógica Difusa","puertas":[{"x":420,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":390,"y":384,"w":30,"h":6,"id":0},{"x":510,"y":264,"w":30,"h":6,"id":0}]},
-            {"paredes":[{"x":450,"y":330,"w":30,"h":30},{"x":450,"y":300,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":450,"y":240,"w":30,"h":30},{"x":450,"y":210,"w":30,"h":30},{"x":450,"y":180,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"6. El Semáforo","puertas":[{"x":480,"y":360,"w":30,"h":30,"id":3},{"x":450,"y":360,"w":30,"h":30,"id":0},{"x":510,"y":390,"w":30,"h":30,"id":1},{"x":510,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":210,"y":384,"w":30,"h":6,"id":3},{"x":240,"y":384,"w":30,"h":6,"id":1},{"x":270,"y":384,"w":30,"h":6,"id":0}]},
-            {"paredes":[{"x":210,"y":330,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":210,"y":270,"w":30,"h":30},{"x":210,"y":240,"w":30,"h":30},{"x":210,"y":210,"w":30,"h":30},{"x":210,"y":180,"w":30,"h":30},{"x":210,"y":150,"w":30,"h":30},{"x":210,"y":120,"w":30,"h":30},{"x":210,"y":90,"w":30,"h":30},{"x":240,"y":90,"w":30,"h":30},{"x":270,"y":90,"w":30,"h":30},{"x":300,"y":90,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":330,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":330,"y":240,"w":30,"h":30},{"x":330,"y":210,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":330,"y":150,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":330,"y":90,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30},{"x":270,"y":180,"w":30,"h":30}],"meta":{"x":480,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"7. División de tareas","puertas":[{"x":210,"y":360,"w":30,"h":30,"id":0},{"x":330,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":90,"y":384,"w":30,"h":6,"id":0},{"x":270,"y":264,"w":30,"h":6,"id":1}]},
-
-            // --- NUEVOS NIVELES (8-20) ---
+            // --- TUS 7 NIVELES ---
+            {"paredes":[],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"Echarás de menos la sencillez...","puertas":[],"botones":[]},
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"¡Nada se interpone en tu camino!","puertas":[],"botones":[]},
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"¿O quizás si?","puertas":[],"botones":[]},
+            {"paredes":[{"x":180,"y":360,"w":30,"h":30},{"x":180,"y":330,"w":30,"h":30},{"x":180,"y":300,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":240,"y":300,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":360,"y":180,"w":30,"h":30},{"x":390,"y":180,"w":30,"h":30},{"x":390,"y":210,"w":30,"h":30},{"x":390,"y":240,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":390,"y":300,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30},{"x":360,"y":360,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":300,"y":360,"w":30,"h":30},{"x":270,"y":360,"w":30,"h":30},{"x":240,"y":360,"w":30,"h":30},{"x":210,"y":360,"w":30,"h":30},{"x":210,"y":330,"w":30,"h":30},{"x":240,"y":330,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":360,"w":30,"h":30},{"x":480,"y":150,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":360,"w":30,"h":30},{"x":510,"y":30,"w":30,"h":30},{"x":540,"y":30,"w":30,"h":30},{"x":540,"y":60,"w":30,"h":30},{"x":540,"y":90,"w":30,"h":30},{"x":540,"y":120,"w":30,"h":30},{"x":540,"y":150,"w":30,"h":30},{"x":540,"y":180,"w":30,"h":30},{"x":540,"y":210,"w":30,"h":30},{"x":540,"y":240,"w":30,"h":30},{"x":540,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"a veces es cuestión de tiempo...","puertas":[],"botones":[]},
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":360,"y":270,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30}],"meta":{"x":420,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"Lógica Difusa","puertas":[{"x":420,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":390,"y":384,"w":30,"h":6,"id":0},{"x":510,"y":264,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":450,"y":330,"w":30,"h":30},{"x":450,"y":300,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":450,"y":240,"w":30,"h":30},{"x":450,"y":210,"w":30,"h":30},{"x":450,"y":180,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"El Semáforo","puertas":[{"x":480,"y":360,"w":30,"h":30,"id":3},{"x":450,"y":360,"w":30,"h":30,"id":0},{"x":510,"y":390,"w":30,"h":30,"id":1},{"x":510,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":210,"y":384,"w":30,"h":6,"id":3},{"x":240,"y":384,"w":30,"h":6,"id":1},{"x":270,"y":384,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":210,"y":330,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":210,"y":270,"w":30,"h":30},{"x":210,"y":240,"w":30,"h":30},{"x":210,"y":210,"w":30,"h":30},{"x":210,"y":180,"w":30,"h":30},{"x":210,"y":150,"w":30,"h":30},{"x":210,"y":120,"w":30,"h":30},{"x":210,"y":90,"w":30,"h":30},{"x":240,"y":90,"w":30,"h":30},{"x":270,"y":90,"w":30,"h":30},{"x":300,"y":90,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":330,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":330,"y":240,"w":30,"h":30},{"x":330,"y":210,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":330,"y":150,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":330,"y":90,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30},{"x":270,"y":180,"w":30,"h":30}],"meta":{"x":480,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"División de tareas","puertas":[{"x":210,"y":360,"w":30,"h":30,"id":0},{"x":330,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":90,"y":384,"w":30,"h":6,"id":0},{"x":270,"y":264,"w":30,"h":6,"id":1}]},
             
-            // NIVEL 8: EL ASCENSOR (Uno mantiene, otro sube)
-            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":300,"y":150,"w":30,"h":30},{"x":300,"y":120,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":360,"y":120,"w":30,"h":30},{"x":390,"y":120,"w":30,"h":30},{"x":420,"y":120,"w":30,"h":30}],"meta":{"x":420,"y":90,"w":30,"h":30},"maxCubos":2,"texto":"8. El Ascensor","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":150,"y":384,"w":30,"h":6,"id":2}]},
-
-            // NIVEL 9: ESCALERA HUMANA (No walls, just ghosts)
-            {"paredes":[],"meta":{"x":60,"y":90,"w":30,"h":30},"maxCubos":4,"texto":"9. Construye tu camino","puertas":[],"botones":[]},
-
-            // NIVEL 10: LA CÁRCEL (El botón está dentro, tú fuera)
-            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":360,"y":330,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"10. La Cárcel","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":0},{"x":360,"y":360,"w":30,"h":30,"id":0},{"x":450,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":345,"y":384,"w":30,"h":6,"id":1},{"x":150,"y":384,"w":30,"h":6,"id":0}]},
-
-            // NIVEL 11: CONFIANZA CIEGA (Botón abre puerta lejana)
-            {"paredes":[{"x":200,"y":200,"w":200,"h":30},{"x":400,"y":200,"w":30,"h":200}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"11. Confianza Ciega","puertas":[{"x":400,"y":360,"w":30,"h":30,"id":3}],"botones":[{"x":250,"y":194,"w":30,"h":6,"id":3}]},
-
-            // NIVEL 12: EL POZO (Hay que tirar un cubo al fondo para pisar)
-            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":0,"y":300,"w":600,"h":30}],"meta":{"x":540,"y":270,"w":30,"h":30},"maxCubos":2,"texto":"12. Sacrificio necesario","puertas":[{"x":450,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":300,"y":384,"w":30,"h":6,"id":0}]},
-
-            // NIVEL 13: ZIG ZAG (Coordinación de colores)
-            {"paredes":[{"x":100,"y":300,"w":400,"h":30},{"x":100,"y":200,"w":400,"h":30}],"meta":{"x":50,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"13. Zig Zag","puertas":[{"x":400,"y":270,"w":30,"h":30,"id":0},{"x":200,"y":170,"w":30,"h":30,"id":1}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":450,"y":294,"w":30,"h":6,"id":1}]},
-
-            // NIVEL 14: PLATAFORMAS FLOTANTES
-            {"paredes":[{"x":150,"y":300,"w":60,"h":10},{"x":300,"y":250,"w":60,"h":10},{"x":450,"y":200,"w":60,"h":10}],"meta":{"x":550,"y":150,"w":30,"h":30},"maxCubos":2,"texto":"14. Sin suelo","puertas":[],"botones":[]},
-
-            // NIVEL 15: LA CAJA FUERTE (4 botones, 4 puertas)
-            {"paredes":[{"x":300,"y":150,"w":300,"h":30}],"meta":{"x":550,"y":120,"w":30,"h":30},"maxCubos":5,"texto":"15. La Caja Fuerte","puertas":[{"x":350,"y":120,"w":30,"h":30,"id":0},{"x":400,"y":120,"w":30,"h":30,"id":1},{"x":450,"y":120,"w":30,"h":30,"id":2},{"x":500,"y":120,"w":30,"h":30,"id":3}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0},{"x":200,"y":384,"w":30,"h":6,"id":1},{"x":300,"y":384,"w":30,"h":6,"id":2},{"x":400,"y":384,"w":30,"h":6,"id":3}]},
-
-            // NIVEL 16: EL TEMPLO (Simetría)
-            {"paredes":[{"x":285,"y":200,"w":30,"h":200}],"meta":{"x":285,"y":170,"w":30,"h":30},"maxCubos":2,"texto":"16. Simetría","puertas":[{"x":100,"y":360,"w":30,"h":30,"id":1},{"x":500,"y":360,"w":30,"h":30,"id":0}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":550,"y":384,"w":30,"h":6,"id":1}]},
-
-            // NIVEL 17: PARKOUR EXTREMO
-            {"paredes":[{"x":100,"y":350,"w":10,"h":10},{"x":150,"y":320,"w":10,"h":10},{"x":200,"y":290,"w":10,"h":10},{"x":250,"y":260,"w":10,"h":10},{"x":300,"y":230,"w":10,"h":10}],"meta":{"x":350,"y":200,"w":30,"h":30},"maxCubos":1,"texto":"17. Precisión","puertas":[],"botones":[]},
-
-            // NIVEL 18: EL INTERRUPTOR DOBLE
-            {"paredes":[{"x":300,"y":0,"w":30,"h":300}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"18. Muro divisorio","puertas":[{"x":300,"y":300,"w":30,"h":30,"id":2},{"x":300,"y":330,"w":30,"h":30,"id":2},{"x":300,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":2}]},
-
-            // NIVEL 19: SALTO SIN RETORNO
-            {"paredes":[{"x":0,"y":200,"w":250,"h":30},{"x":350,"y":200,"w":250,"h":30}],"meta":{"x":500,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"19. Sin retorno","puertas":[{"x":350,"y":170,"w":30,"h":30,"id":0}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0}]},
-
-            // NIVEL 20: LA GRAN TORRE (Final Pack 1)
-            {"paredes":[{"x":200,"y":300,"w":200,"h":30},{"x":250,"y":200,"w":100,"h":30}],"meta":{"x":285,"y":50,"w":30,"h":30},"maxCubos":4,"texto":"20. La Cima","puertas":[],"botones":[]}
+            // --- NUEVOS (8-20) ---
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":300,"y":150,"w":30,"h":30},{"x":300,"y":120,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":360,"y":120,"w":30,"h":30},{"x":390,"y":120,"w":30,"h":30},{"x":420,"y":120,"w":30,"h":30}],"meta":{"x":420,"y":90,"w":30,"h":30},"maxCubos":2,"texto":"El Ascensor","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":150,"y":384,"w":30,"h":6,"id":2}]},
+            {"paredes":[],"meta":{"x":60,"y":90,"w":30,"h":30},"maxCubos":4,"texto":"Construye tu camino","puertas":[],"botones":[]},
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":360,"y":330,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"La Cárcel","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":0},{"x":360,"y":360,"w":30,"h":30,"id":0},{"x":450,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":345,"y":384,"w":30,"h":6,"id":1},{"x":150,"y":384,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":200,"y":200,"w":200,"h":30},{"x":400,"y":200,"w":30,"h":200}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"Confianza Ciega","puertas":[{"x":400,"y":360,"w":30,"h":30,"id":3}],"botones":[{"x":250,"y":194,"w":30,"h":6,"id":3}]},
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":0,"y":300,"w":600,"h":30}],"meta":{"x":540,"y":270,"w":30,"h":30},"maxCubos":2,"texto":"Sacrificio necesario","puertas":[{"x":450,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":300,"y":384,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":100,"y":300,"w":400,"h":30},{"x":100,"y":200,"w":400,"h":30}],"meta":{"x":50,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"Zig Zag","puertas":[{"x":400,"y":270,"w":30,"h":30,"id":0},{"x":200,"y":170,"w":30,"h":30,"id":1}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":450,"y":294,"w":30,"h":6,"id":1}]},
+            {"paredes":[{"x":150,"y":300,"w":60,"h":10},{"x":300,"y":250,"w":60,"h":10},{"x":450,"y":200,"w":60,"h":10}],"meta":{"x":550,"y":150,"w":30,"h":30},"maxCubos":2,"texto":"Sin suelo","puertas":[],"botones":[]},
+            {"paredes":[{"x":300,"y":150,"w":300,"h":30}],"meta":{"x":550,"y":120,"w":30,"h":30},"maxCubos":5,"texto":"La Caja Fuerte","puertas":[{"x":350,"y":120,"w":30,"h":30,"id":0},{"x":400,"y":120,"w":30,"h":30,"id":1},{"x":450,"y":120,"w":30,"h":30,"id":2},{"x":500,"y":120,"w":30,"h":30,"id":3}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0},{"x":200,"y":384,"w":30,"h":6,"id":1},{"x":300,"y":384,"w":30,"h":6,"id":2},{"x":400,"y":384,"w":30,"h":6,"id":3}]},
+            {"paredes":[{"x":285,"y":200,"w":30,"h":200}],"meta":{"x":285,"y":170,"w":30,"h":30},"maxCubos":2,"texto":"Simetría","puertas":[{"x":100,"y":360,"w":30,"h":30,"id":1},{"x":500,"y":360,"w":30,"h":30,"id":0}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":550,"y":384,"w":30,"h":6,"id":1}]},
+            {"paredes":[{"x":100,"y":350,"w":10,"h":10},{"x":150,"y":320,"w":10,"h":10},{"x":200,"y":290,"w":10,"h":10},{"x":250,"y":260,"w":10,"h":10},{"x":300,"y":230,"w":10,"h":10}],"meta":{"x":350,"y":200,"w":30,"h":30},"maxCubos":1,"texto":"Precisión","puertas":[],"botones":[]},
+            {"paredes":[{"x":300,"y":0,"w":30,"h":300}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"Muro divisorio","puertas":[{"x":300,"y":300,"w":30,"h":30,"id":2},{"x":300,"y":330,"w":30,"h":30,"id":2},{"x":300,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":2}]},
+            {"paredes":[{"x":0,"y":200,"w":250,"h":30},{"x":350,"y":200,"w":250,"h":30}],"meta":{"x":500,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"Sin retorno","puertas":[{"x":350,"y":170,"w":30,"h":30,"id":0}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":200,"y":300,"w":200,"h":30},{"x":250,"y":200,"w":100,"h":30}],"meta":{"x":285,"y":50,"w":30,"h":30},"maxCubos":4,"texto":"La Cima","puertas":[],"botones":[]}
         ];
 
         // --- SISTEMA ---
@@ -338,6 +298,23 @@
 
         initColorPicker();
 
+        // --- CONTROLES MÓVILES ---
+        function initMobileControls() {
+            const setupBtn = (id, keyCode) => {
+                const btn = document.getElementById(id);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[keyCode] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); teclas[keyCode] = false; });
+            };
+            setupBtn('btnLeft', 'ArrowLeft');
+            setupBtn('btnRight', 'ArrowRight');
+            setupBtn('btnJump', 'ArrowUp');
+            
+            // Acciones especiales
+            document.getElementById('btnNext').addEventListener('touchstart', (e) => { e.preventDefault(); siguienteCubo(); });
+            document.getElementById('btnReset').addEventListener('touchstart', (e) => { e.preventDefault(); resetTotal(); });
+        }
+        initMobileControls();
+
         // --- NAVEGACIÓN ---
         function irMenuPrincipal() { ocultarTodo(); document.getElementById('menuScreen').classList.add('active'); modo = 'MENU'; }
         function irPantallaNiveles() { ocultarTodo(); document.getElementById('levelScreen').classList.add('active'); generarBotonesNiveles(); modo = 'MENU'; }
@@ -374,12 +351,21 @@
             const sidebar = document.getElementById('sidebar');
             const navBtns = document.getElementById('gameNavButtons');
             const topInfo = document.getElementById('topInfo');
+            const mobileCtrl = document.getElementById('mobileControls');
             
             if (nuevoModo === 'EDITOR') {
-                sidebar.style.display = 'flex'; navBtns.style.display = 'none'; topInfo.style.display = 'none';
+                sidebar.classList.add('mobile-editor-mode'); // Forzar flex en móvil
+                sidebar.style.display = 'flex'; 
+                navBtns.style.display = 'none'; 
+                topInfo.style.display = 'none';
+                mobileCtrl.style.display = 'none'; // No controles en editor
                 document.getElementById('vidasDisplay').innerText = 4;
             } else {
-                sidebar.style.display = 'none'; navBtns.style.display = 'inline'; topInfo.style.display = 'block';
+                sidebar.classList.remove('mobile-editor-mode');
+                sidebar.style.display = 'none'; 
+                navBtns.style.display = 'inline'; 
+                topInfo.style.display = 'block';
+                // Mobile controls se muestran por CSS media query, no aquí
             }
             modo = nuevoModo; resetTotal();
         }
@@ -397,14 +383,47 @@
         function exportarNivel() { prompt("Código:", JSON.stringify(nivelActual)); }
 
         let mousePulsado = false;
+        
+        // Soporte Táctil para Editor
+        canvas.addEventListener('touchstart', (e) => { 
+            if (modo !== 'EDITOR') return; 
+            mousePulsado = true; 
+            handleTouchEditor(e, true); 
+        });
+        canvas.addEventListener('touchmove', (e) => { 
+            if (modo === 'EDITOR' && mousePulsado) {
+                e.preventDefault(); 
+                handleTouchEditor(e, false); 
+            }
+        });
+        canvas.addEventListener('touchend', () => mousePulsado = false);
+
+        function handleTouchEditor(e, isClick) {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            // Simular evento de ratón con coordenadas táctiles
+            const fakeEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            };
+            clickEditor(fakeEvent, isClick);
+        }
+
+        // Soporte Mouse para Editor
         canvas.addEventListener('mousedown', (e) => { if (modo !== 'EDITOR') return; mousePulsado = true; clickEditor(e, true); });
         canvas.addEventListener('mousemove', (e) => { if (modo === 'EDITOR' && mousePulsado) clickEditor(e, false); });
         window.addEventListener('mouseup', () => mousePulsado = false);
 
         function clickEditor(e, esClick) {
             const rect = canvas.getBoundingClientRect();
-            const gx = Math.floor((e.clientX - rect.left) / TILE) * TILE;
-            const gy = Math.floor((e.clientY - rect.top) / TILE) * TILE;
+            // Ajustar coordenadas relativas al canvas (importante si se escala con CSS)
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const gx = Math.floor(((e.clientX - rect.left) * scaleX) / TILE) * TILE;
+            const gy = Math.floor(((e.clientY - rect.top) * scaleY) / TILE) * TILE;
+
+            if (gx < 0 || gx >= canvas.width || gy < 0 || gy >= canvas.height) return;
 
             if (herramienta === 'muro') {
                 if (!nivelActual.paredes.some(p => p.x === gx && p.y === gy)) nivelActual.paredes.push({ x: gx, y: gy, w: TILE, h: TILE });
@@ -428,7 +447,6 @@
                     nivelActual.botones.push({ x: gx, y: gy + 24, w: TILE, h: 6, id: colorSeleccionado }); 
                     borrarEn(gx, gy, ['pared', 'meta', 'puerta']);
                 } else {
-                    // Si ya existe, cicla color pero manteniendo ID lógica
                     let btn = nivelActual.botones.find(b => b.x === gx && b.y >= gy && b.y <= gy+30);
                     btn.id = (btn.id + 1) % 4;
                 }
