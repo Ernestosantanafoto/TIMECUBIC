@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TIMECUBE V26 - Mobile Ready</title>
+    <title>TIMECUBE V27 - Mobile Layout</title>
     <style>
         body {
             background-color: #111;
@@ -16,9 +16,9 @@
             margin: 0;
             font-family: monospace;
             overflow: hidden;
-            user-select: none; /* Evita seleccionar texto al tocar */
+            user-select: none;
             -webkit-user-select: none;
-            touch-action: none; /* Evita gestos del navegador */
+            touch-action: none;
         }
 
         /* --- LAYOUT PRINCIPAL --- */
@@ -30,7 +30,7 @@
             width: 100%;
             height: 100%;
             justify-content: center;
-            padding-top: 20px;
+            padding-top: 10px;
         }
 
         .center-area {
@@ -38,20 +38,75 @@
             flex-direction: column;
             align-items: center;
             position: relative; 
+            width: 100%;
+            max-width: 600px;
         }
 
-        /* --- CANVAS RESPONSIVO --- */
+        /* --- CANVAS --- */
         canvas {
             background-color: #1a1a1a;
             border: 4px solid #888;
             cursor: crosshair;
-            max-width: 95vw; /* No pasar del ancho de pantalla */
-            max-height: 60vh; /* Dejar espacio para controles */
-            width: auto;
+            width: 100%; /* Ajuste fluido */
             height: auto;
+            aspect-ratio: 600/390;
+            max-height: 60vh; /* Dejar sitio a controles */
         }
 
-        /* --- BARRA LATERAL (Responsive) --- */
+        /* --- NUEVO CONTENEDOR DE CONTROLES TÁCTILES --- */
+        #mobileControls {
+            display: none; /* Se activa en móvil */
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 5px;
+            box-sizing: border-box;
+            background: #111;
+            margin-top: 5px;
+        }
+
+        /* Grupos de botones (Izquierda y Derecha) */
+        .control-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Botones Cuadrados */
+        .touch-btn {
+            width: 65px;
+            height: 65px;
+            background: #222;
+            border: 2px solid #555;
+            border-radius: 12px; /* Cuadrado con bordes suaves */
+            color: #fff;
+            font-size: 1.8em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 0 #000;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .touch-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #000;
+            background: #333;
+            border-color: cyan;
+            color: cyan;
+        }
+
+        /* Colores específicos para ayudar visualmente */
+        #btnNext { border-color: #0088ff; color: #0088ff; font-size: 1.2em; font-weight: bold;} /* Clone */
+        #btnJump { border-color: #00ff00; color: #00ff00; } /* Salto */
+        #btnReset { 
+            width: 40px; height: 40px; font-size: 0.8em; border-color: #ff4444; color: #ff4444; 
+            border-radius: 50%; /* Reset circular pequeño */
+        }
+
+        /* --- BARRA LATERAL --- */
         #sidebar {
             display: flex;
             flex-direction: column;
@@ -62,90 +117,40 @@
             gap: 8px;
             width: 150px; 
             max-height: 90vh;
-            overflow-y: auto; /* Scroll si la pantalla es bajita */
+            overflow-y: auto;
         }
-
-        /* --- CONTROLES TÁCTILES (GAMEPAD) --- */
-        #mobileControls {
-            display: none; /* Se activa con media query */
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            height: 150px;
-            pointer-events: none; /* Para ver a través */
-            z-index: 100;
-        }
-
-        .touch-btn {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            pointer-events: auto; /* Los botones sí reciben toques */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5em;
-            color: rgba(255, 255, 255, 0.8);
-            user-select: none;
-        }
-        .touch-btn:active { background: rgba(0, 255, 255, 0.4); color: white; }
-
-        /* Posiciones de botones */
-        #btnLeft { bottom: 20px; left: 20px; }
-        #btnRight { bottom: 20px; left: 90px; }
-        #btnJump { bottom: 20px; right: 20px; width: 70px; height: 70px; background: rgba(0, 255, 0, 0.15); }
-        #btnNext { bottom: 100px; right: 20px; width: 50px; height: 50px; font-size: 1em; background: rgba(255, 255, 0, 0.15); }
-        #btnReset { top: -350px; right: 0px; width: 40px; height: 40px; font-size: 0.8em; border-radius: 5px; background: rgba(255, 0, 0, 0.3); }
 
         /* --- ESTILOS GENERALES --- */
-        .tool-btn {
-            background: #333; border: 1px solid #666; color: #aaa; padding: 10px;
-            cursor: pointer; text-align: left; font-family: monospace; font-size: 0.9rem;
-        }
+        .tool-btn { background: #333; border: 1px solid #666; color: #aaa; padding: 10px; cursor: pointer; text-align: left; font-family: monospace; font-size: 0.9rem; }
         .tool-btn.active { background: cyan; color: #000; border-color: cyan; font-weight: bold; }
-        
         .action-group { margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; display: flex; flex-direction: column; gap: 5px; }
         .btn-action { border: 1px solid #FFD700; color: #FFD700; background: transparent; padding: 8px; cursor: pointer; text-align: center; }
-        
         .lives-control { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 5px; border: 1px solid #444; }
         .mini-btn { background: #333; color: cyan; border: none; width: 25px; cursor: pointer; }
         .lives-val { color: cyan; font-weight: bold; }
-
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 5px; }
         .color-swatch { width: 100%; height: 25px; border: 2px solid #444; cursor: pointer; }
         .color-swatch.selected { border-color: #fff; box-shadow: 0 0 5px white; transform: scale(1.1); }
-
         #topInfo { width: 100%; text-align: center; margin-bottom: 5px; font-size: 1.2rem; color: cyan; font-weight: bold; }
-        #mensajeVictoria { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid #0f0; color: #0f0; 
-            font-size: 1.5em; font-weight: bold; display: none; z-index: 100;
-        }
-
+        #mensajeVictoria { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid #0f0; color: #0f0; font-size: 1.5em; font-weight: bold; display: none; z-index: 100; pointer-events: none; }
+        
         .screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; position: absolute; top:0; left:0; background: #111; z-index: 10; }
         .screen.active { display: flex; }
-        pre { color: cyan; font-weight: bold; line-height: 10px; margin-bottom: 40px; text-shadow: 0 0 10px cyan; font-size: 0.8em; } /* Fuente más pequeña para que quepa */
-
+        pre { color: cyan; font-weight: bold; line-height: 10px; margin-bottom: 40px; text-shadow: 0 0 10px cyan; font-size: 0.8em; }
         .btn-main { background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px 30px; font-size: 1.2rem; margin: 10px; min-width: 200px; }
         .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-height: 60vh; overflow-y: auto; padding: 10px; }
         .level-btn { width: 70px; height: 70px; border: 2px solid #555; background: #222; color: #fff; font-size: 1.5em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .level-btn.completed { border-color: #0f0; color: #0f0; }
         .btn-back { color: #ff4444; background: none; border: none; font-size: 1rem; margin-top: 20px; font-weight: bold; text-transform: uppercase; }
 
-        /* --- MEDIA QUERY PARA MÓVILES --- */
+        /* --- MEDIA QUERY --- */
         @media (max-width: 800px) {
-            #mainLayout { flex-direction: column; align-items: center; }
-            #sidebar { display: none !important; } /* Ocultar editor en móvil si jugamos */
-            #gameUI { display: none; } /* Ocultar textos de teclado */
-            #mobileControls { display: block; } /* Mostrar controles táctiles */
-            canvas { width: 95vw; }
-            
-            /* Ajustes editor en móvil (si se fuerza) */
-            #sidebar.mobile-editor-mode { display: flex !important; width: 90%; margin-top: 10px; }
+            #mainLayout { flex-direction: column; justify-content: flex-start; }
+            #sidebar { display: none !important; }
+            #gameUI { display: none; } /* Ocultar texto teclado */
+            #mobileControls { display: flex; } /* Mostrar gamepad */
+            canvas { max-width: 100%; }
+            #topInfo { font-size: 1em; margin-bottom: 2px; }
         }
     </style>
 </head>
@@ -154,7 +159,7 @@
     <div id="menuScreen" class="screen active">
 <pre>
 TIMECUBE
-MOBILE V26
+MOBILE V27
 </pre>
         <button class="btn-main" onclick="irPantallaNiveles()">JUGAR</button>
         <button class="btn-main" onclick="iniciarEditor()" style="border-color:cyan; color:cyan;">EDITOR</button>
@@ -167,7 +172,6 @@ MOBILE V26
     </div>
 
     <div id="mainLayout">
-        
         <div class="center-area">
             <div id="topInfo">CUBOS: 0 / 0</div>
             <div id="mensajeVictoria">¡COMPLETADO!</div>
@@ -175,12 +179,17 @@ MOBILE V26
             <canvas id="miCanvas" width="600" height="390"></canvas>
             
             <div id="mobileControls">
-                <div class="touch-btn" id="btnLeft">←</div>
-                <div class="touch-btn" id="btnRight">→</div>
-                <div class="touch-btn" id="btnJump">↑</div>
-                <div class="touch-btn" id="btnNext">clone</div>
+                <div class="control-group">
+                    <div class="touch-btn" id="btnLeft">←</div>
+                    <div class="touch-btn" id="btnNext" style="font-size:0.8em;">CLONE</div>
+                </div>
+
                 <div class="touch-btn" id="btnReset">R</div>
-                <div class="touch-btn" onclick="irMenuPrincipal()" style="top:-350px; left:0px; width:40px; height:40px; font-size:0.8em; border-radius:5px; border-color:#555;">M</div>
+
+                <div class="control-group">
+                    <div class="touch-btn" id="btnJump">↑</div>
+                    <div class="touch-btn" id="btnRight">→</div>
+                </div>
             </div>
 
             <div id="gameUI">
@@ -220,9 +229,8 @@ MOBILE V26
         const COLORES_LOGICOS = ['#FF0000', '#00FF00', '#0044FF', '#FFFF00', '#00FFFF', '#FF00FF'];
         let colorSeleccionado = 0; 
 
-        // --- BASE DE DATOS (20 NIVELES: 7 Tuyos + 13 Nuevos) ---
+        // BASE DE DATOS (20 NIVELES)
         const NIVELES_DB = [
-            // --- TUS 7 NIVELES ---
             {"paredes":[],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"Echarás de menos la sencillez...","puertas":[],"botones":[]},
             {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"¡Nada se interpone en tu camino!","puertas":[],"botones":[]},
             {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"¿O quizás si?","puertas":[],"botones":[]},
@@ -230,8 +238,6 @@ MOBILE V26
             {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":360,"y":270,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30}],"meta":{"x":420,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"Lógica Difusa","puertas":[{"x":420,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":390,"y":384,"w":30,"h":6,"id":0},{"x":510,"y":264,"w":30,"h":6,"id":0}]},
             {"paredes":[{"x":450,"y":330,"w":30,"h":30},{"x":450,"y":300,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":450,"y":240,"w":30,"h":30},{"x":450,"y":210,"w":30,"h":30},{"x":450,"y":180,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"El Semáforo","puertas":[{"x":480,"y":360,"w":30,"h":30,"id":3},{"x":450,"y":360,"w":30,"h":30,"id":0},{"x":510,"y":390,"w":30,"h":30,"id":1},{"x":510,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":210,"y":384,"w":30,"h":6,"id":3},{"x":240,"y":384,"w":30,"h":6,"id":1},{"x":270,"y":384,"w":30,"h":6,"id":0}]},
             {"paredes":[{"x":210,"y":330,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":210,"y":270,"w":30,"h":30},{"x":210,"y":240,"w":30,"h":30},{"x":210,"y":210,"w":30,"h":30},{"x":210,"y":180,"w":30,"h":30},{"x":210,"y":150,"w":30,"h":30},{"x":210,"y":120,"w":30,"h":30},{"x":210,"y":90,"w":30,"h":30},{"x":240,"y":90,"w":30,"h":30},{"x":270,"y":90,"w":30,"h":30},{"x":300,"y":90,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":330,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":330,"y":240,"w":30,"h":30},{"x":330,"y":210,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":330,"y":150,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":330,"y":90,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30},{"x":270,"y":180,"w":30,"h":30}],"meta":{"x":480,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"División de tareas","puertas":[{"x":210,"y":360,"w":30,"h":30,"id":0},{"x":330,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":90,"y":384,"w":30,"h":6,"id":0},{"x":270,"y":264,"w":30,"h":6,"id":1}]},
-            
-            // --- NUEVOS (8-20) ---
             {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":300,"y":150,"w":30,"h":30},{"x":300,"y":120,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":360,"y":120,"w":30,"h":30},{"x":390,"y":120,"w":30,"h":30},{"x":420,"y":120,"w":30,"h":30}],"meta":{"x":420,"y":90,"w":30,"h":30},"maxCubos":2,"texto":"El Ascensor","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":150,"y":384,"w":30,"h":6,"id":2}]},
             {"paredes":[],"meta":{"x":60,"y":90,"w":30,"h":30},"maxCubos":4,"texto":"Construye tu camino","puertas":[],"botones":[]},
             {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":360,"y":330,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"La Cárcel","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":0},{"x":360,"y":360,"w":30,"h":30,"id":0},{"x":450,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":345,"y":384,"w":30,"h":6,"id":1},{"x":150,"y":384,"w":30,"h":6,"id":0}]},
@@ -250,78 +256,50 @@ MOBILE V26
         // --- SISTEMA ---
         const canvas = document.getElementById('miCanvas');
         const ctx = canvas.getContext('2d');
-        
-        let modo = 'MENU'; 
-        let herramienta = 'muro'; 
-        let indiceNivelJugado = -1; 
-
-        const TILE = 30; 
-        const GRAVEDAD = 0.6;
-        const DURACION_MAX = 600; 
-
-        let frame = 0;
-        let grabacionActual = [];
-        let fantasmas = [];
+        let modo = 'MENU'; let herramienta = 'muro'; let indiceNivelJugado = -1;
+        const TILE = 30; const GRAVEDAD = 0.6; const DURACION_MAX = 600; 
+        let frame = 0; let grabacionActual = []; let fantasmas = [];
         let nivelActual = { paredes: [], meta: null, maxCubos: 4, texto: "", puertas: [], botones: [] }; 
-        let estadoBotones = []; // Estado dinámico según colores
-        let victoria = false;
-        
+        let estadoBotones = []; let victoria = false;
         const jugador = { x: 60, y: 0, w: TILE, h: TILE, vx: 0, vy: 0, enSuelo: false, color: '#FFD700' };
 
-        // --- INICIALIZAR UI COLORES ---
+        // --- INICIALIZAR ---
         function initColorPicker() {
-            const grid = document.getElementById('colorGrid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('colorGrid'); grid.innerHTML = '';
             COLORES_LOGICOS.forEach((col, idx) => {
-                const div = document.createElement('div');
-                div.className = 'color-swatch';
-                div.style.backgroundColor = col;
+                const div = document.createElement('div'); div.className = 'color-swatch'; div.style.backgroundColor = col;
                 if(idx === 0) div.classList.add('selected');
-                div.onclick = () => seleccionarColor(idx, div);
-                grid.appendChild(div);
+                div.onclick = () => seleccionarColor(idx, div); grid.appendChild(div);
             });
             actualizarBotonesHerramienta();
         }
-
         function seleccionarColor(idx, el) {
-            colorSeleccionado = idx;
-            document.querySelectorAll('.color-swatch').forEach(d => d.classList.remove('selected'));
-            el.classList.add('selected');
-            actualizarBotonesHerramienta();
+            colorSeleccionado = idx; document.querySelectorAll('.color-swatch').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected'); actualizarBotonesHerramienta();
         }
-
         function actualizarBotonesHerramienta() {
             const color = COLORES_LOGICOS[colorSeleccionado];
-            document.getElementById('btnToolPuerta').style.color = color;
-            document.getElementById('btnToolBoton').style.color = color;
+            document.getElementById('btnToolPuerta').style.color = color; document.getElementById('btnToolBoton').style.color = color;
         }
-
         initColorPicker();
 
-        // --- CONTROLES MÓVILES ---
+        // CONTROLES MÓVILES
         function initMobileControls() {
             const setupBtn = (id, keyCode) => {
                 const btn = document.getElementById(id);
-                btn.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[keyCode] = true; });
-                btn.addEventListener('touchend', (e) => { e.preventDefault(); teclas[keyCode] = false; });
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[keyCode] = true; btn.style.transform='scale(0.9)'; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); teclas[keyCode] = false; btn.style.transform='scale(1)';});
             };
-            setupBtn('btnLeft', 'ArrowLeft');
-            setupBtn('btnRight', 'ArrowRight');
-            setupBtn('btnJump', 'ArrowUp');
-            
-            // Acciones especiales
+            setupBtn('btnLeft', 'ArrowLeft'); setupBtn('btnRight', 'ArrowRight'); setupBtn('btnJump', 'ArrowUp');
             document.getElementById('btnNext').addEventListener('touchstart', (e) => { e.preventDefault(); siguienteCubo(); });
             document.getElementById('btnReset').addEventListener('touchstart', (e) => { e.preventDefault(); resetTotal(); });
         }
         initMobileControls();
 
-        // --- NAVEGACIÓN ---
+        // NAVEGACIÓN
         function irMenuPrincipal() { ocultarTodo(); document.getElementById('menuScreen').classList.add('active'); modo = 'MENU'; }
         function irPantallaNiveles() { ocultarTodo(); document.getElementById('levelScreen').classList.add('active'); generarBotonesNiveles(); modo = 'MENU'; }
-        function ocultarTodo() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('mainLayout').style.display = 'none';
-        }
+        function ocultarTodo() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('mainLayout').style.display = 'none'; }
         function generarBotonesNiveles() {
             const grid = document.getElementById('gridNiveles'); grid.innerHTML = '';
             NIVELES_DB.forEach((nivel, index) => {
@@ -331,152 +309,91 @@ MOBILE V26
             });
         }
 
-        // --- CARGA ---
         function cargarNivel(index) {
             indiceNivelJugado = index;
             const datos = JSON.parse(JSON.stringify(NIVELES_DB[index]));
             if(!datos.puertas) datos.puertas = []; if(!datos.botones) datos.botones = [];
-            nivelActual = datos;
-            prepararJuego('JUEGO');
+            nivelActual = datos; prepararJuego('JUEGO');
         }
-
         function iniciarEditor() {
-            indiceNivelJugado = -1;
-            nivelActual = { paredes: [], meta: null, maxCubos: 4, texto: "", puertas: [], botones: [] };
+            indiceNivelJugado = -1; nivelActual = { paredes: [], meta: null, maxCubos: 4, texto: "", puertas: [], botones: [] };
             prepararJuego('EDITOR');
         }
-
         function prepararJuego(nuevoModo) {
             ocultarTodo(); document.getElementById('mainLayout').style.display = 'flex';
-            const sidebar = document.getElementById('sidebar');
-            const navBtns = document.getElementById('gameNavButtons');
-            const topInfo = document.getElementById('topInfo');
-            const mobileCtrl = document.getElementById('mobileControls');
+            const sidebar = document.getElementById('sidebar'); const navBtns = document.getElementById('gameNavButtons');
+            const topInfo = document.getElementById('topInfo'); const mobileCtrl = document.getElementById('mobileControls');
             
             if (nuevoModo === 'EDITOR') {
-                sidebar.classList.add('mobile-editor-mode'); // Forzar flex en móvil
-                sidebar.style.display = 'flex'; 
-                navBtns.style.display = 'none'; 
-                topInfo.style.display = 'none';
-                mobileCtrl.style.display = 'none'; // No controles en editor
+                sidebar.style.display = 'flex'; navBtns.style.display = 'none'; topInfo.style.display = 'none'; mobileCtrl.style.display = 'none';
                 document.getElementById('vidasDisplay').innerText = 4;
             } else {
-                sidebar.classList.remove('mobile-editor-mode');
-                sidebar.style.display = 'none'; 
-                navBtns.style.display = 'inline'; 
-                topInfo.style.display = 'block';
-                // Mobile controls se muestran por CSS media query, no aquí
+                sidebar.style.display = 'none'; navBtns.style.display = 'inline'; topInfo.style.display = 'block';
             }
             modo = nuevoModo; resetTotal();
         }
 
-        // --- LÓGICA ---
-        function setTool(t) {
-            herramienta = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); event.currentTarget.classList.add('active');
-        }
+        // --- EDITOR & GAMEPLAY ---
+        function setTool(t) { herramienta = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); event.currentTarget.classList.add('active'); }
         function cambiarVidas(delta) {
             let n = nivelActual.maxCubos + delta; if (n < 1) n = 1; if (n > 10) n = 10;
-            nivelActual.maxCubos = n; document.getElementById('vidasDisplay').innerText = n;
-            if (modo === 'SIMULACION') resetTotal();
+            nivelActual.maxCubos = n; document.getElementById('vidasDisplay').innerText = n; if (modo === 'SIMULACION') resetTotal();
         }
         function editarTexto() { let t = prompt("Texto:", nivelActual.texto); if (t !== null) nivelActual.texto = t; }
         function exportarNivel() { prompt("Código:", JSON.stringify(nivelActual)); }
-
-        let mousePulsado = false;
-        
-        // Soporte Táctil para Editor
-        canvas.addEventListener('touchstart', (e) => { 
-            if (modo !== 'EDITOR') return; 
-            mousePulsado = true; 
-            handleTouchEditor(e, true); 
-        });
-        canvas.addEventListener('touchmove', (e) => { 
-            if (modo === 'EDITOR' && mousePulsado) {
-                e.preventDefault(); 
-                handleTouchEditor(e, false); 
-            }
-        });
-        canvas.addEventListener('touchend', () => mousePulsado = false);
-
-        function handleTouchEditor(e, isClick) {
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            // Simular evento de ratón con coordenadas táctiles
-            const fakeEvent = {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            };
-            clickEditor(fakeEvent, isClick);
+        function togglePlayEdit() {
+            const btn = document.getElementById('btnSimular');
+            if (modo === 'EDITOR') { modo = 'SIMULACION'; btn.innerText = "■ EDITAR"; btn.style.borderColor = "orange"; btn.style.color = "orange"; resetTotal(); } 
+            else { modo = 'EDITOR'; btn.innerText = "▶ PROBAR"; btn.style.borderColor = "#FFD700"; btn.style.color = "#FFD700"; victoria = false; document.getElementById('mensajeVictoria').style.display = 'none'; }
         }
 
-        // Soporte Mouse para Editor
-        canvas.addEventListener('mousedown', (e) => { if (modo !== 'EDITOR') return; mousePulsado = true; clickEditor(e, true); });
-        canvas.addEventListener('mousemove', (e) => { if (modo === 'EDITOR' && mousePulsado) clickEditor(e, false); });
-        window.addEventListener('mouseup', () => mousePulsado = false);
-
-        function clickEditor(e, esClick) {
+        // INPUT MOUSE/TOUCH EDITOR
+        let mousePulsado = false;
+        const handleInput = (e, isClick) => {
+            if (modo !== 'EDITOR') return;
             const rect = canvas.getBoundingClientRect();
-            // Ajustar coordenadas relativas al canvas (importante si se escala con CSS)
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            const gx = Math.floor(((e.clientX - rect.left) * scaleX) / TILE) * TILE;
-            const gy = Math.floor(((e.clientY - rect.top) * scaleY) / TILE) * TILE;
-
+            const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+            const gx = Math.floor(((clientX - rect.left) * scaleX) / TILE) * TILE;
+            const gy = Math.floor(((clientY - rect.top) * scaleY) / TILE) * TILE;
+            
             if (gx < 0 || gx >= canvas.width || gy < 0 || gy >= canvas.height) return;
 
             if (herramienta === 'muro') {
                 if (!nivelActual.paredes.some(p => p.x === gx && p.y === gy)) nivelActual.paredes.push({ x: gx, y: gy, w: TILE, h: TILE });
                 borrarEn(gx, gy, ['meta', 'puerta', 'boton']);
-            } 
-            else if (herramienta === 'borrar') { borrarEn(gx, gy, ['pared', 'meta', 'puerta', 'boton']); }
-            else if (herramienta === 'meta') {
+            } else if (herramienta === 'borrar') {
+                borrarEn(gx, gy, ['pared', 'meta', 'puerta', 'boton']);
+            } else if (herramienta === 'meta') {
                 nivelActual.meta = { x: gx, y: gy, w: TILE, h: TILE }; borrarEn(gx, gy, ['pared', 'puerta', 'boton']);
+            } else if (herramienta === 'puerta' && isClick) {
+                let p = nivelActual.puertas.find(p => p.x === gx && p.y === gy);
+                if (p) p.id = colorSeleccionado;
+                else { nivelActual.puertas.push({ x: gx, y: gy, w: TILE, h: TILE, id: colorSeleccionado }); borrarEn(gx, gy, ['pared', 'meta', 'boton']); }
+            } else if (herramienta === 'boton' && isClick) {
+                let b = nivelActual.botones.find(b => b.x === gx && b.y >= gy && b.y <= gy+30);
+                if (b) b.id = colorSeleccionado;
+                else { nivelActual.botones.push({ x: gx, y: gy + 24, w: TILE, h: 6, id: colorSeleccionado }); borrarEn(gx, gy, ['pared', 'meta', 'puerta']); }
             }
-            else if (herramienta === 'puerta' && esClick) {
-                let existente = nivelActual.puertas.find(p => p.x === gx && p.y === gy);
-                if (existente) {
-                    existente.id = (existente.id + 1) % 4; // Ciclo simple si ya existe
-                } else {
-                    nivelActual.puertas.push({ x: gx, y: gy, w: TILE, h: TILE, id: colorSeleccionado });
-                    borrarEn(gx, gy, ['pared', 'meta', 'boton']);
-                }
-            }
-            else if (herramienta === 'boton' && esClick) {
-                if (!nivelActual.botones.some(b => b.x === gx && b.y >= gy && b.y <= gy+30)) {
-                    nivelActual.botones.push({ x: gx, y: gy + 24, w: TILE, h: 6, id: colorSeleccionado }); 
-                    borrarEn(gx, gy, ['pared', 'meta', 'puerta']);
-                } else {
-                    let btn = nivelActual.botones.find(b => b.x === gx && b.y >= gy && b.y <= gy+30);
-                    btn.id = (btn.id + 1) % 4;
-                }
-            }
+        };
+        function borrarEn(x, y, types) {
+            if (types.includes('pared')) nivelActual.paredes = nivelActual.paredes.filter(p => !(p.x === x && p.y === y));
+            if (types.includes('meta') && nivelActual.meta && nivelActual.meta.x === x && nivelActual.meta.y === y) nivelActual.meta = null;
+            if (types.includes('puerta')) nivelActual.puertas = nivelActual.puertas.filter(p => !(p.x === x && p.y === y));
+            if (types.includes('boton')) nivelActual.botones = nivelActual.botones.filter(b => !(b.x === x && (b.y >= y && b.y <= y+30)));
         }
+        canvas.addEventListener('mousedown', e => { mousePulsado = true; handleInput(e, true); });
+        canvas.addEventListener('mousemove', e => { if(mousePulsado) handleInput(e, false); });
+        window.addEventListener('mouseup', () => mousePulsado = false);
+        canvas.addEventListener('touchstart', e => { mousePulsado = true; handleInput(e, true); });
+        canvas.addEventListener('touchmove', e => { if(mousePulsado) { e.preventDefault(); handleInput(e, false); }});
+        window.addEventListener('touchend', () => mousePulsado = false);
 
-        function borrarEn(x, y, tipos) {
-            if (tipos.includes('pared')) nivelActual.paredes = nivelActual.paredes.filter(p => !(p.x === x && p.y === y));
-            if (tipos.includes('meta') && nivelActual.meta && nivelActual.meta.x === x && nivelActual.meta.y === y) nivelActual.meta = null;
-            if (tipos.includes('puerta')) nivelActual.puertas = nivelActual.puertas.filter(p => !(p.x === x && p.y === y));
-            if (tipos.includes('boton')) nivelActual.botones = nivelActual.botones.filter(b => !(b.x === x && (b.y >= y && b.y <= y+30)));
-        }
-
-        function togglePlayEdit() {
-            const btn = document.getElementById('btnSimular');
-            if (modo === 'EDITOR') {
-                modo = 'SIMULACION'; btn.innerText = "■ EDITAR"; btn.style.borderColor = "orange"; btn.style.color = "orange"; resetTotal();
-            } else {
-                modo = 'EDITOR'; btn.innerText = "▶ PROBAR"; btn.style.borderColor = "#FFD700"; btn.style.color = "#FFD700"; victoria = false; document.getElementById('mensajeVictoria').style.display = 'none';
-            }
-        }
-
+        // GAME LOOP
         const teclas = {};
-        window.addEventListener('keydown', e => {
-            teclas[e.code] = true;
-            if (modo === 'JUEGO' || modo === 'SIMULACION') {
-                if (e.code === 'ArrowDown' || e.code === 'KeyS') siguienteCubo();
-                if (e.code === 'Space') resetTotal();
-            }
-        });
+        window.addEventListener('keydown', e => { teclas[e.code] = true; if((modo === 'JUEGO' || modo === 'SIMULACION')) { if(e.code==='ArrowDown'||e.code==='KeyS') siguienteCubo(); if(e.code==='Space') resetTotal(); }});
         window.addEventListener('keyup', e => teclas[e.code] = false);
 
         function siguienteCubo() {
@@ -485,37 +402,18 @@ MOBILE V26
             if (grabacionActual.length > 0) fantasmas.push([...grabacionActual]);
             resetJugador();
         }
-
-        function resetTotal() {
-            fantasmas = []; resetJugador();
-            document.getElementById('mensajeVictoria').style.display = 'none'; victoria = false;
-        }
-        function resetJugador() {
-            grabacionActual = []; frame = 0;
-            jugador.x = 60; jugador.y = 0; jugador.vx = 0; jugador.vy = 0;
-        }
-
-        function checkColision(r1, r2) {
-            return (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y);
-        }
+        function resetTotal() { fantasmas = []; resetJugador(); document.getElementById('mensajeVictoria').style.display = 'none'; victoria = false; }
+        function resetJugador() { grabacionActual = []; frame = 0; jugador.x = 60; jugador.y = 0; jugador.vx = 0; jugador.vy = 0; }
+        
+        function checkColision(r1, r2) { return (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y); }
 
         function actualizar() {
             if (modo === 'EDITOR' || modo === 'MENU' || victoria) return;
 
-            // UPDATE BOTONES
             estadoBotones = new Array(COLORES_LOGICOS.length).fill(false);
-            const checkBoton = (entidad) => {
-                nivelActual.botones.forEach(btn => {
-                    let sensor = {x: btn.x + 5, y: btn.y - 5, w: btn.w - 10, h: 10}; 
-                    if (checkColision(entidad, sensor)) estadoBotones[btn.id] = true;
-                });
-            };
-            checkBoton(jugador);
-            fantasmas.forEach(f => {
-                if (frame < f.length) checkBoton({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE});
-            });
+            const checkBoton = (ent) => { nivelActual.botones.forEach(btn => { if(checkColision(ent, {x:btn.x+5, y:btn.y-5, w:btn.w-10, h:10})) estadoBotones[btn.id] = true; }); };
+            checkBoton(jugador); fantasmas.forEach(f => { if(frame < f.length) checkBoton({x:f[frame].x, y:f[frame].y, w:TILE, h:TILE}); });
 
-            // FISICAS
             if (teclas['ArrowLeft'] || teclas['KeyA']) jugador.vx = -5;
             else if (teclas['ArrowRight'] || teclas['KeyD']) jugador.vx = 5;
             else jugador.vx = 0;
@@ -523,46 +421,33 @@ MOBILE V26
             if ((teclas['ArrowUp'] || teclas['KeyW']) && jugador.enSuelo) { jugador.vy = -12; jugador.enSuelo = false; }
             jugador.vy += GRAVEDAD;
 
-            // X
             jugador.x += jugador.vx;
             if (jugador.x < 0) jugador.x = 0; if (jugador.x + jugador.w > canvas.width) jugador.x = canvas.width - jugador.w;
             
-            nivelActual.paredes.forEach(m => resolveCol(m, 'x'));
-            nivelActual.puertas.forEach(p => {
-                if (!estadoBotones[p.id]) resolveCol(p, 'x');
-            });
-            fantasmas.forEach(f => {
-                if (frame < f.length) resolveCol({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE}, 'x');
-            });
+            const resolveCol = (obs, axis) => {
+                if (checkColision(jugador, obs)) {
+                    if (axis === 'x') { if (jugador.vx > 0) jugador.x = obs.x - jugador.w; else jugador.x = obs.x + obs.w; }
+                    else { if (jugador.vy > 0) { jugador.y = obs.y - jugador.h; jugador.enSuelo = true; jugador.vy = 0; } else jugador.y = obs.y + obs.h; }
+                }
+            };
 
-            // Y
+            const checkAll = (axis) => {
+                nivelActual.paredes.forEach(m => resolveCol(m, axis));
+                nivelActual.puertas.forEach(p => { if(!estadoBotones[p.id]) resolveCol(p, axis); });
+                fantasmas.forEach(f => { if(frame < f.length) resolveCol({x:f[frame].x, y:f[frame].y, w:TILE, h:TILE}, axis); });
+            };
+
+            checkAll('x');
             jugador.y += jugador.vy; jugador.enSuelo = false;
             if (jugador.y + jugador.h > canvas.height) { jugador.y = canvas.height - jugador.h; jugador.vy = 0; jugador.enSuelo = true; }
-            if (jugador.y < 0) { jugador.y = 0; jugador.vy = 0; }
+            checkAll('y');
 
-            nivelActual.paredes.forEach(m => resolveCol(m, 'y'));
-            nivelActual.puertas.forEach(p => {
-                if (!estadoBotones[p.id]) resolveCol(p, 'y');
-            });
-            fantasmas.forEach(f => {
-                if (frame < f.length) resolveCol({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE}, 'y');
-            });
-
-            // META & VICTORIA
             if (nivelActual.meta && checkColision(jugador, nivelActual.meta)) {
-                if(!victoria) { // Evitar disparar múltiples veces
-                    victoria = true;
-                    document.getElementById('mensajeVictoria').style.display = 'block';
+                if (!victoria) {
+                    victoria = true; document.getElementById('mensajeVictoria').style.display = 'block';
                     if (indiceNivelJugado !== -1) {
                         localStorage.setItem('timecube_nivel_' + indiceNivelJugado, 'true');
-                        // Auto-Next
-                        setTimeout(() => {
-                            if(indiceNivelJugado + 1 < NIVELES_DB.length) {
-                                cargarNivel(indiceNivelJugado + 1);
-                            } else {
-                                irMenuPrincipal();
-                            }
-                        }, 1500);
+                        setTimeout(() => { if(indiceNivelJugado + 1 < NIVELES_DB.length) cargarNivel(indiceNivelJugado + 1); else irMenuPrincipal(); }, 1500);
                     }
                 }
             }
@@ -575,86 +460,46 @@ MOBILE V26
             if (info.style.display !== 'none') info.innerText = `CUBOS: ${fantasmas.length + 1} / ${nivelActual.maxCubos}`;
         }
 
-        function resolveCol(obs, eje) {
-            if (checkColision(jugador, obs)) {
-                if (eje === 'x') {
-                    if (jugador.vx > 0) jugador.x = obs.x - jugador.w;
-                    else if (jugador.vx < 0) jugador.x = obs.x + obs.w;
-                } else {
-                    if (jugador.vy > 0) { jugador.y = obs.y - jugador.h; jugador.enSuelo = true; jugador.vy = 0; }
-                    else if (jugador.vy < 0) { jugador.y = obs.y + obs.h; jugador.vy = 0; }
-                }
-            }
-        }
-
         function dibujar() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             if (nivelActual.texto) {
                 ctx.save(); ctx.font = "20px monospace"; ctx.fillStyle = "rgba(0, 255, 255, 0.2)"; 
-                ctx.textAlign = "center"; ctx.shadowColor = "cyan"; ctx.shadowBlur = 10;
-                ctx.fillText(nivelActual.texto, canvas.width / 2, 100); ctx.restore();
+                ctx.textAlign = "center"; ctx.fillText(nivelActual.texto, canvas.width / 2, 100); ctx.restore();
             }
-
             if (modo === 'EDITOR') {
                 ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
                 for (let x = 0; x <= canvas.width; x += TILE) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
                 for (let y = 0; y <= canvas.height; y += TILE) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
                 ctx.stroke();
             }
-
             nivelActual.botones.forEach(b => {
                 ctx.fillStyle = COLORES_LOGICOS[b.id];
-                if (estadoBotones[b.id] && modo !== 'EDITOR') {
-                    ctx.fillRect(b.x + 2, b.y + 4, b.w - 4, 2);
-                } else {
-                    ctx.fillRect(b.x + 2, b.y, b.w - 4, b.h);
-                }
+                if ((estadoBotones[b.id] && modo !== 'EDITOR') || (modo === 'EDITOR')) ctx.fillRect(b.x + 2, b.y + 4, b.w - 4, 2);
+                else ctx.fillRect(b.x + 2, b.y, b.w - 4, b.h);
             });
-
             ctx.fillStyle = '#888';
-            nivelActual.paredes.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.w, p.h); ctx.strokeStyle = '#aaa'; ctx.strokeRect(p.x, p.y, p.w, p.h);
-            });
-
+            nivelActual.paredes.forEach(p => { ctx.fillRect(p.x, p.y, p.w, p.h); ctx.strokeStyle = '#aaa'; ctx.strokeRect(p.x, p.y, p.w, p.h); });
             nivelActual.puertas.forEach(p => {
                 let abierto = estadoBotones[p.id] && modo !== 'EDITOR';
                 ctx.fillStyle = COLORES_LOGICOS[p.id];
-                if (abierto) {
-                    ctx.globalAlpha = 0.2; ctx.fillRect(p.x + 4, p.y, p.w - 8, p.h);
-                    ctx.globalAlpha = 1.0; ctx.strokeStyle = COLORES_LOGICOS[p.id]; ctx.strokeRect(p.x + 4, p.y, p.w - 8, p.h);
-                } else {
-                    ctx.fillRect(p.x, p.y, p.w, p.h);
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(p.x + 10, p.y + 5, 10, p.h - 10);
-                }
+                if (abierto) { ctx.globalAlpha = 0.2; ctx.fillRect(p.x+4, p.y, p.w-8, p.h); ctx.globalAlpha = 1.0; ctx.strokeStyle = COLORES_LOGICOS[p.id]; ctx.strokeRect(p.x+4, p.y, p.w-8, p.h); }
+                else { ctx.fillRect(p.x, p.y, p.w, p.h); ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(p.x+10, p.y+5, 10, p.h-10); }
             });
-
             if (nivelActual.meta) {
                 ctx.fillStyle = 'rgba(0, 255, 0, 0.5)'; ctx.fillRect(nivelActual.meta.x, nivelActual.meta.y, TILE, TILE);
                 ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2; ctx.strokeRect(nivelActual.meta.x, nivelActual.meta.y, TILE, TILE);
-                
-                // TEXTO META CENTRADO
-                ctx.fillStyle = '#fff'; ctx.font = "10px monospace"; 
-                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillStyle = '#fff'; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
                 ctx.fillText("META", nivelActual.meta.x + TILE/2, nivelActual.meta.y + TILE/2);
             }
-
             if (modo !== 'EDITOR') {
                 ctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
-                fantasmas.forEach(f => {
-                    if (frame < f.length) {
-                        ctx.fillRect(f[frame].x, f[frame].y, TILE, TILE); ctx.strokeStyle = 'cyan'; ctx.strokeRect(f[frame].x, f[frame].y, TILE, TILE);
-                    }
-                });
-                ctx.fillStyle = jugador.color;
-                ctx.fillRect(jugador.x, jugador.y, TILE, TILE); ctx.strokeStyle = '#000'; ctx.strokeRect(jugador.x, jugador.y, TILE, TILE);
+                fantasmas.forEach(f => { if (frame < f.length) { ctx.fillRect(f[frame].x, f[frame].y, TILE, TILE); ctx.strokeStyle = 'cyan'; ctx.strokeRect(f[frame].x, f[frame].y, TILE, TILE); }});
+                ctx.fillStyle = jugador.color; ctx.fillRect(jugador.x, jugador.y, TILE, TILE); ctx.strokeStyle = '#000'; ctx.strokeRect(jugador.x, jugador.y, TILE, TILE);
                 ctx.fillStyle = 'orange'; ctx.fillRect(0, 0, (frame/DURACION_MAX) * canvas.width, 5);
             }
             requestAnimationFrame(bucle);
         }
-
         bucle(); function bucle() { actualizar(); dibujar(); }
-
     </script>
 </body>
 </html>
