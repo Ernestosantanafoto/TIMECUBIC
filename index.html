@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>TIMECUBE V25 - Nivel 7 Added</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- LAYOUT PRINCIPAL --- */
+        #mainLayout {
+            display: none; 
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative; 
+        }
+
+        /* --- BARRA LATERAL --- */
+        #sidebar {
+            display: flex;
+            flex-direction: column;
+            background: #222;
+            padding: 10px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            gap: 8px;
+            width: 150px; 
+        }
+
+        .tool-btn {
+            background: #333;
+            border: 1px solid #666;
+            color: #aaa;
+            padding: 10px;
+            cursor: pointer;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .tool-btn:hover { background: #444; color: #fff; }
+        .tool-btn.active { 
+            background: cyan; color: #000; border-color: cyan; font-weight: bold; 
+            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+        }
+        
+        .action-group {
+            margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; display: flex; flex-direction: column; gap: 5px;
+        }
+        .btn-action {
+            border: 1px solid #FFD700; color: #FFD700; background: transparent; padding: 8px; cursor: pointer; text-align: center;
+        }
+        .btn-action:hover { background: #FFD700; color: #000; }
+
+        .lives-control {
+            display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 5px; border: 1px solid #444;
+        }
+        .mini-btn { background: #333; color: cyan; border: none; width: 25px; cursor: pointer; }
+        .lives-val { color: cyan; font-weight: bold; }
+
+        /* --- COLOR PICKER --- */
+        .color-label { font-size: 0.7em; color: #888; margin-top: 5px; }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .color-swatch {
+            width: 100%;
+            height: 25px;
+            border: 2px solid #444;
+            cursor: pointer;
+        }
+        .color-swatch.selected {
+            border-color: #fff;
+            box-shadow: 0 0 5px white;
+            transform: scale(1.1);
+        }
+
+        /* --- JUEGO --- */
+        canvas {
+            background-color: #1a1a1a;
+            border: 4px solid #888;
+            cursor: crosshair; 
+        }
+
+        #topInfo {
+            width: 100%; text-align: center; margin-bottom: 10px;
+            font-size: 1.2rem; color: cyan; font-weight: bold; text-shadow: 0 0 5px cyan;
+        }
+
+        #mensajeVictoria { 
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border: 2px solid #0f0;
+            color: #0f0; 
+            font-size: 2em; 
+            font-weight: bold; 
+            text-shadow: 0 0 10px #0f0;
+            display: none; 
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        /* --- MENÚS --- */
+        .screen {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; position: absolute; top:0; left:0; background: #111; z-index: 10;
+        }
+        .screen.active { display: flex; }
+
+        pre { color: cyan; font-weight: bold; line-height: 10px; margin-bottom: 40px; text-shadow: 0 0 10px cyan; }
+
+        .btn-main {
+            background: transparent; border: 2px solid #FFD700; color: #FFD700;
+            padding: 15px 30px; font-size: 1.2rem; cursor: pointer; margin: 10px; min-width: 200px;
+        }
+        .btn-main:hover { background: #FFD700; color: #000; box-shadow: 0 0 15px #FFD700; }
+
+        .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        
+        .level-btn {
+            width: 80px; height: 80px; border: 2px solid #555; background: #222; color: #fff;
+            font-size: 1.5em; cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .level-btn.completed { border-color: #0f0; color: #0f0; box-shadow: 0 0 10px #0f0; }
+        .btn-back { color: #ff4444; background: none; border: none; font-size: 1rem; cursor: pointer; margin-top: 20px; font-weight: bold; text-decoration: none; text-transform: uppercase;}
+        .btn-back:hover { text-shadow: 0 0 8px red; color: #fff;}
+
+        /* UI JUEGO */
+        #gameUI { margin-top: 10px; text-align: center; font-size: 0.9em; width: 600px;}
+        .tecla { background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; }
+        .nav-mini { 
+            border: none; color: #ff4444; background: none; cursor: pointer; margin-left: 10px; padding: 4px 10px; font-weight: bold; text-transform: uppercase; font-family: monospace;
+        }
+        .nav-mini:hover { color: #fff; text-shadow: 0 0 5px red; }
+
+    </style>
+</head>
+<body>
+
+    <div id="menuScreen" class="screen active">
+<pre>
+████████╗██╗███╗   ███╗███████╗
+╚══██╔══╝██║████╗ ████║██╔════╝
+   ██║   ██║██╔████╔██║█████╗  
+   ██║   ██║██║╚██╔╝██║██╔══╝  
+   ██║   ██║██║ ╚═╝ ██║███████╗
+   ╚═╝   ╚═╝╚═╝     ╚═╝╚══════╝
+</pre>
+        <button class="btn-main" onclick="irPantallaNiveles()">JUGAR</button>
+        <button class="btn-main" onclick="iniciarEditor()" style="border-color:cyan; color:cyan;">EDITOR</button>
+    </div>
+
+    <div id="levelScreen" class="screen">
+        <h2 style="color:cyan;">SELECCIONA NIVEL</h2>
+        <div class="level-grid" id="gridNiveles"></div>
+        <button class="btn-back" onclick="irMenuPrincipal()">[ VOLVER ]</button>
+    </div>
+
+    <div id="mainLayout">
+        
+        <div class="center-area">
+            <div id="topInfo">CUBOS: 0 / 0</div>
+            <div id="mensajeVictoria">¡NIVEL COMPLETADO!</div>
+            <canvas id="miCanvas" width="600" height="390"></canvas>
+            
+            <div id="gameUI">
+                <span class="tecla">W</span> SALTAR | <span class="tecla">A D</span> MOVER | <span class="tecla">↓</span> SIGUIENTE | <span class="tecla">ESPACIO</span> REINICIAR
+                <span id="gameNavButtons">
+                    <button class="nav-mini" onclick="irPantallaNiveles()">NIVELES</button>
+                    <button class="nav-mini" onclick="irMenuPrincipal()">MENU</button>
+                </span>
+            </div>
+        </div>
+
+        <div id="sidebar">
+            <div style="font-size:0.8em; color:#666; text-align:center; margin-bottom:5px;">HERRAMIENTAS</div>
+            
+            <button class="tool-btn active" onclick="setTool('muro')">[█] MURO</button>
+            <button class="tool-btn" onclick="setTool('meta')">[★] META</button>
+            <button class="tool-btn" onclick="setTool('borrar')">[X] BORRAR</button>
+            
+            <div class="color-label">CANAL LÓGICO:</div>
+            <div class="color-grid" id="colorGrid">
+                </div>
+
+            <button class="tool-btn" id="btnToolPuerta" onclick="setTool('puerta')">[∏] PUERTA</button>
+            <button class="tool-btn" id="btnToolBoton" onclick="setTool('boton')">[_] BOTÓN</button>
+
+            <div class="lives-control">
+                <span style="font-size:0.8em; color:#aaa;">CUBOS</span>
+                <button class="mini-btn" onclick="cambiarVidas(-1)">-</button>
+                <span class="lives-val" id="vidasDisplay">4</span>
+                <button class="mini-btn" onclick="cambiarVidas(1)">+</button>
+            </div>
+
+            <button class="tool-btn" onclick="editarTexto()">[T] TEXTO</button>
+
+            <div class="action-group">
+                <button class="btn-action" onclick="togglePlayEdit()" id="btnSimular">▶ PROBAR</button>
+                <button class="btn-action" onclick="exportarNivel()">EXPORTAR</button>
+                <button class="btn-action" onclick="irMenuPrincipal()" style="border-color:#555; color:#aaa;">SALIR</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const COLORES_LOGICOS = ['#FF0000', '#00FF00', '#0044FF', '#FFFF00', '#00FFFF', '#FF00FF'];
+        let colorSeleccionado = 0; 
+
+        // --- BASE DE DATOS DE NIVELES (7 NIVELES) ---
+        // --- BASE DE DATOS DE NIVELES (CAMPAÑA EXTENDIDA V25) ---
+        const NIVELES_DB = [
+            // --- TUTORIALES (1-7) ---
+            {"paredes":[],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"1. La sencillez...","puertas":[],"botones":[]},
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":1,"texto":"2. El obstáculo","puertas":[],"botones":[]},
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"3. ¿Llegas solo?","puertas":[],"botones":[]},
+            {"paredes":[{"x":180,"y":360,"w":30,"h":30},{"x":180,"y":330,"w":30,"h":30},{"x":180,"y":300,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":240,"y":300,"w":30,"h":30},{"x":270,"y":300,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":360,"y":180,"w":30,"h":30},{"x":390,"y":180,"w":30,"h":30},{"x":390,"y":210,"w":30,"h":30},{"x":390,"y":240,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":390,"y":300,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30},{"x":360,"y":360,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":300,"y":360,"w":30,"h":30},{"x":270,"y":360,"w":30,"h":30},{"x":240,"y":360,"w":30,"h":30},{"x":210,"y":360,"w":30,"h":30},{"x":210,"y":330,"w":30,"h":30},{"x":240,"y":330,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":360,"w":30,"h":30},{"x":480,"y":150,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":360,"w":30,"h":30},{"x":510,"y":30,"w":30,"h":30},{"x":540,"y":30,"w":30,"h":30},{"x":540,"y":60,"w":30,"h":30},{"x":540,"y":90,"w":30,"h":30},{"x":540,"y":120,"w":30,"h":30},{"x":540,"y":150,"w":30,"h":30},{"x":540,"y":180,"w":30,"h":30},{"x":540,"y":210,"w":30,"h":30},{"x":540,"y":240,"w":30,"h":30},{"x":540,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"4. El laberinto","puertas":[],"botones":[]},
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":360,"y":270,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":390,"y":270,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":540,"y":300,"w":30,"h":30},{"x":540,"y":360,"w":30,"h":30},{"x":540,"y":330,"w":30,"h":30}],"meta":{"x":420,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"5. Lógica Difusa","puertas":[{"x":420,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":390,"y":384,"w":30,"h":6,"id":0},{"x":510,"y":264,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":450,"y":330,"w":30,"h":30},{"x":450,"y":300,"w":30,"h":30},{"x":450,"y":270,"w":30,"h":30},{"x":450,"y":240,"w":30,"h":30},{"x":450,"y":210,"w":30,"h":30},{"x":450,"y":180,"w":30,"h":30},{"x":480,"y":330,"w":30,"h":30},{"x":480,"y":300,"w":30,"h":30},{"x":480,"y":270,"w":30,"h":30},{"x":480,"y":240,"w":30,"h":30},{"x":480,"y":210,"w":30,"h":30},{"x":480,"y":180,"w":30,"h":30},{"x":510,"y":330,"w":30,"h":30},{"x":510,"y":300,"w":30,"h":30},{"x":510,"y":270,"w":30,"h":30},{"x":510,"y":240,"w":30,"h":30},{"x":510,"y":210,"w":30,"h":30},{"x":510,"y":180,"w":30,"h":30}],"meta":{"x":570,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"6. El Semáforo","puertas":[{"x":480,"y":360,"w":30,"h":30,"id":3},{"x":450,"y":360,"w":30,"h":30,"id":0},{"x":510,"y":390,"w":30,"h":30,"id":1},{"x":510,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":210,"y":384,"w":30,"h":6,"id":3},{"x":240,"y":384,"w":30,"h":6,"id":1},{"x":270,"y":384,"w":30,"h":6,"id":0}]},
+            {"paredes":[{"x":210,"y":330,"w":30,"h":30},{"x":210,"y":300,"w":30,"h":30},{"x":210,"y":270,"w":30,"h":30},{"x":210,"y":240,"w":30,"h":30},{"x":210,"y":210,"w":30,"h":30},{"x":210,"y":180,"w":30,"h":30},{"x":210,"y":150,"w":30,"h":30},{"x":210,"y":120,"w":30,"h":30},{"x":210,"y":90,"w":30,"h":30},{"x":240,"y":90,"w":30,"h":30},{"x":270,"y":90,"w":30,"h":30},{"x":300,"y":90,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":330,"y":300,"w":30,"h":30},{"x":330,"y":270,"w":30,"h":30},{"x":330,"y":240,"w":30,"h":30},{"x":330,"y":210,"w":30,"h":30},{"x":330,"y":180,"w":30,"h":30},{"x":330,"y":150,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":330,"y":90,"w":30,"h":30},{"x":270,"y":270,"w":30,"h":30},{"x":270,"y":180,"w":30,"h":30}],"meta":{"x":480,"y":360,"w":30,"h":30},"maxCubos":4,"texto":"7. División de tareas","puertas":[{"x":210,"y":360,"w":30,"h":30,"id":0},{"x":330,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":90,"y":384,"w":30,"h":6,"id":0},{"x":270,"y":264,"w":30,"h":6,"id":1}]},
+
+            // --- NUEVOS NIVELES (8-20) ---
+            
+            // NIVEL 8: EL ASCENSOR (Uno mantiene, otro sube)
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":300,"y":300,"w":30,"h":30},{"x":300,"y":270,"w":30,"h":30},{"x":300,"y":240,"w":30,"h":30},{"x":300,"y":210,"w":30,"h":30},{"x":300,"y":180,"w":30,"h":30},{"x":300,"y":150,"w":30,"h":30},{"x":300,"y":120,"w":30,"h":30},{"x":330,"y":120,"w":30,"h":30},{"x":360,"y":120,"w":30,"h":30},{"x":390,"y":120,"w":30,"h":30},{"x":420,"y":120,"w":30,"h":30}],"meta":{"x":420,"y":90,"w":30,"h":30},"maxCubos":2,"texto":"8. El Ascensor","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":150,"y":384,"w":30,"h":6,"id":2}]},
+
+            // NIVEL 9: ESCALERA HUMANA (No walls, just ghosts)
+            {"paredes":[],"meta":{"x":60,"y":90,"w":30,"h":30},"maxCubos":4,"texto":"9. Construye tu camino","puertas":[],"botones":[]},
+
+            // NIVEL 10: LA CÁRCEL (El botón está dentro, tú fuera)
+            {"paredes":[{"x":300,"y":360,"w":30,"h":30},{"x":300,"y":330,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":360,"y":330,"w":30,"h":30},{"x":390,"y":330,"w":30,"h":30},{"x":390,"y":360,"w":30,"h":30}],"meta":{"x":540,"y":360,"w":30,"h":30},"maxCubos":3,"texto":"10. La Cárcel","puertas":[{"x":330,"y":360,"w":30,"h":30,"id":0},{"x":360,"y":360,"w":30,"h":30,"id":0},{"x":450,"y":360,"w":30,"h":30,"id":1}],"botones":[{"x":345,"y":384,"w":30,"h":6,"id":1},{"x":150,"y":384,"w":30,"h":6,"id":0}]},
+
+            // NIVEL 11: CONFIANZA CIEGA (Botón abre puerta lejana)
+            {"paredes":[{"x":200,"y":200,"w":200,"h":30},{"x":400,"y":200,"w":30,"h":200}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"11. Confianza Ciega","puertas":[{"x":400,"y":360,"w":30,"h":30,"id":3}],"botones":[{"x":250,"y":194,"w":30,"h":6,"id":3}]},
+
+            // NIVEL 12: EL POZO (Hay que tirar un cubo al fondo para pisar)
+            {"paredes":[{"x":270,"y":360,"w":30,"h":30},{"x":270,"y":330,"w":30,"h":30},{"x":330,"y":360,"w":30,"h":30},{"x":330,"y":330,"w":30,"h":30},{"x":0,"y":300,"w":600,"h":30}],"meta":{"x":540,"y":270,"w":30,"h":30},"maxCubos":2,"texto":"12. Sacrificio necesario","puertas":[{"x":450,"y":270,"w":30,"h":30,"id":0}],"botones":[{"x":300,"y":384,"w":30,"h":6,"id":0}]},
+
+            // NIVEL 13: ZIG ZAG (Coordinación de colores)
+            {"paredes":[{"x":100,"y":300,"w":400,"h":30},{"x":100,"y":200,"w":400,"h":30}],"meta":{"x":50,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"13. Zig Zag","puertas":[{"x":400,"y":270,"w":30,"h":30,"id":0},{"x":200,"y":170,"w":30,"h":30,"id":1}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":450,"y":294,"w":30,"h":6,"id":1}]},
+
+            // NIVEL 14: PLATAFORMAS FLOTANTES
+            {"paredes":[{"x":150,"y":300,"w":60,"h":10},{"x":300,"y":250,"w":60,"h":10},{"x":450,"y":200,"w":60,"h":10}],"meta":{"x":550,"y":150,"w":30,"h":30},"maxCubos":2,"texto":"14. Sin suelo","puertas":[],"botones":[]},
+
+            // NIVEL 15: LA CAJA FUERTE (4 botones, 4 puertas)
+            {"paredes":[{"x":300,"y":150,"w":300,"h":30}],"meta":{"x":550,"y":120,"w":30,"h":30},"maxCubos":5,"texto":"15. La Caja Fuerte","puertas":[{"x":350,"y":120,"w":30,"h":30,"id":0},{"x":400,"y":120,"w":30,"h":30,"id":1},{"x":450,"y":120,"w":30,"h":30,"id":2},{"x":500,"y":120,"w":30,"h":30,"id":3}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0},{"x":200,"y":384,"w":30,"h":6,"id":1},{"x":300,"y":384,"w":30,"h":6,"id":2},{"x":400,"y":384,"w":30,"h":6,"id":3}]},
+
+            // NIVEL 16: EL TEMPLO (Simetría)
+            {"paredes":[{"x":285,"y":200,"w":30,"h":200}],"meta":{"x":285,"y":170,"w":30,"h":30},"maxCubos":2,"texto":"16. Simetría","puertas":[{"x":100,"y":360,"w":30,"h":30,"id":1},{"x":500,"y":360,"w":30,"h":30,"id":0}],"botones":[{"x":50,"y":384,"w":30,"h":6,"id":0},{"x":550,"y":384,"w":30,"h":6,"id":1}]},
+
+            // NIVEL 17: PARKOUR EXTREMO
+            {"paredes":[{"x":100,"y":350,"w":10,"h":10},{"x":150,"y":320,"w":10,"h":10},{"x":200,"y":290,"w":10,"h":10},{"x":250,"y":260,"w":10,"h":10},{"x":300,"y":230,"w":10,"h":10}],"meta":{"x":350,"y":200,"w":30,"h":30},"maxCubos":1,"texto":"17. Precisión","puertas":[],"botones":[]},
+
+            // NIVEL 18: EL INTERRUPTOR DOBLE
+            {"paredes":[{"x":300,"y":0,"w":30,"h":300}],"meta":{"x":500,"y":360,"w":30,"h":30},"maxCubos":2,"texto":"18. Muro divisorio","puertas":[{"x":300,"y":300,"w":30,"h":30,"id":2},{"x":300,"y":330,"w":30,"h":30,"id":2},{"x":300,"y":360,"w":30,"h":30,"id":2}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":2}]},
+
+            // NIVEL 19: SALTO SIN RETORNO
+            {"paredes":[{"x":0,"y":200,"w":250,"h":30},{"x":350,"y":200,"w":250,"h":30}],"meta":{"x":500,"y":170,"w":30,"h":30},"maxCubos":3,"texto":"19. Sin retorno","puertas":[{"x":350,"y":170,"w":30,"h":30,"id":0}],"botones":[{"x":100,"y":384,"w":30,"h":6,"id":0}]},
+
+            // NIVEL 20: LA GRAN TORRE (Final Pack 1)
+            {"paredes":[{"x":200,"y":300,"w":200,"h":30},{"x":250,"y":200,"w":100,"h":30}],"meta":{"x":285,"y":50,"w":30,"h":30},"maxCubos":4,"texto":"20. La Cima","puertas":[],"botones":[]}
+        ];
+
+        // --- SISTEMA ---
+        const canvas = document.getElementById('miCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let modo = 'MENU'; 
+        let herramienta = 'muro'; 
+        let indiceNivelJugado = -1; 
+
+        const TILE = 30; 
+        const GRAVEDAD = 0.6;
+        const DURACION_MAX = 600; 
+
+        let frame = 0;
+        let grabacionActual = [];
+        let fantasmas = [];
+        let nivelActual = { paredes: [], meta: null, maxCubos: 4, texto: "", puertas: [], botones: [] }; 
+        let estadoBotones = []; // Estado dinámico según colores
+        let victoria = false;
+        
+        const jugador = { x: 60, y: 0, w: TILE, h: TILE, vx: 0, vy: 0, enSuelo: false, color: '#FFD700' };
+
+        // --- INICIALIZAR UI COLORES ---
+        function initColorPicker() {
+            const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
+            COLORES_LOGICOS.forEach((col, idx) => {
+                const div = document.createElement('div');
+                div.className = 'color-swatch';
+                div.style.backgroundColor = col;
+                if(idx === 0) div.classList.add('selected');
+                div.onclick = () => seleccionarColor(idx, div);
+                grid.appendChild(div);
+            });
+            actualizarBotonesHerramienta();
+        }
+
+        function seleccionarColor(idx, el) {
+            colorSeleccionado = idx;
+            document.querySelectorAll('.color-swatch').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            actualizarBotonesHerramienta();
+        }
+
+        function actualizarBotonesHerramienta() {
+            const color = COLORES_LOGICOS[colorSeleccionado];
+            document.getElementById('btnToolPuerta').style.color = color;
+            document.getElementById('btnToolBoton').style.color = color;
+        }
+
+        initColorPicker();
+
+        // --- NAVEGACIÓN ---
+        function irMenuPrincipal() { ocultarTodo(); document.getElementById('menuScreen').classList.add('active'); modo = 'MENU'; }
+        function irPantallaNiveles() { ocultarTodo(); document.getElementById('levelScreen').classList.add('active'); generarBotonesNiveles(); modo = 'MENU'; }
+        function ocultarTodo() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('mainLayout').style.display = 'none';
+        }
+        function generarBotonesNiveles() {
+            const grid = document.getElementById('gridNiveles'); grid.innerHTML = '';
+            NIVELES_DB.forEach((nivel, index) => {
+                const btn = document.createElement('div'); btn.className = 'level-btn'; btn.innerText = index + 1;
+                if (localStorage.getItem('timecube_nivel_' + index) === 'true') btn.classList.add('completed');
+                btn.onclick = () => cargarNivel(index); grid.appendChild(btn);
+            });
+        }
+
+        // --- CARGA ---
+        function cargarNivel(index) {
+            indiceNivelJugado = index;
+            const datos = JSON.parse(JSON.stringify(NIVELES_DB[index]));
+            if(!datos.puertas) datos.puertas = []; if(!datos.botones) datos.botones = [];
+            nivelActual = datos;
+            prepararJuego('JUEGO');
+        }
+
+        function iniciarEditor() {
+            indiceNivelJugado = -1;
+            nivelActual = { paredes: [], meta: null, maxCubos: 4, texto: "", puertas: [], botones: [] };
+            prepararJuego('EDITOR');
+        }
+
+        function prepararJuego(nuevoModo) {
+            ocultarTodo(); document.getElementById('mainLayout').style.display = 'flex';
+            const sidebar = document.getElementById('sidebar');
+            const navBtns = document.getElementById('gameNavButtons');
+            const topInfo = document.getElementById('topInfo');
+            
+            if (nuevoModo === 'EDITOR') {
+                sidebar.style.display = 'flex'; navBtns.style.display = 'none'; topInfo.style.display = 'none';
+                document.getElementById('vidasDisplay').innerText = 4;
+            } else {
+                sidebar.style.display = 'none'; navBtns.style.display = 'inline'; topInfo.style.display = 'block';
+            }
+            modo = nuevoModo; resetTotal();
+        }
+
+        // --- LÓGICA ---
+        function setTool(t) {
+            herramienta = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); event.currentTarget.classList.add('active');
+        }
+        function cambiarVidas(delta) {
+            let n = nivelActual.maxCubos + delta; if (n < 1) n = 1; if (n > 10) n = 10;
+            nivelActual.maxCubos = n; document.getElementById('vidasDisplay').innerText = n;
+            if (modo === 'SIMULACION') resetTotal();
+        }
+        function editarTexto() { let t = prompt("Texto:", nivelActual.texto); if (t !== null) nivelActual.texto = t; }
+        function exportarNivel() { prompt("Código:", JSON.stringify(nivelActual)); }
+
+        let mousePulsado = false;
+        canvas.addEventListener('mousedown', (e) => { if (modo !== 'EDITOR') return; mousePulsado = true; clickEditor(e, true); });
+        canvas.addEventListener('mousemove', (e) => { if (modo === 'EDITOR' && mousePulsado) clickEditor(e, false); });
+        window.addEventListener('mouseup', () => mousePulsado = false);
+
+        function clickEditor(e, esClick) {
+            const rect = canvas.getBoundingClientRect();
+            const gx = Math.floor((e.clientX - rect.left) / TILE) * TILE;
+            const gy = Math.floor((e.clientY - rect.top) / TILE) * TILE;
+
+            if (herramienta === 'muro') {
+                if (!nivelActual.paredes.some(p => p.x === gx && p.y === gy)) nivelActual.paredes.push({ x: gx, y: gy, w: TILE, h: TILE });
+                borrarEn(gx, gy, ['meta', 'puerta', 'boton']);
+            } 
+            else if (herramienta === 'borrar') { borrarEn(gx, gy, ['pared', 'meta', 'puerta', 'boton']); }
+            else if (herramienta === 'meta') {
+                nivelActual.meta = { x: gx, y: gy, w: TILE, h: TILE }; borrarEn(gx, gy, ['pared', 'puerta', 'boton']);
+            }
+            else if (herramienta === 'puerta' && esClick) {
+                let existente = nivelActual.puertas.find(p => p.x === gx && p.y === gy);
+                if (existente) {
+                    existente.id = (existente.id + 1) % 4; // Ciclo simple si ya existe
+                } else {
+                    nivelActual.puertas.push({ x: gx, y: gy, w: TILE, h: TILE, id: colorSeleccionado });
+                    borrarEn(gx, gy, ['pared', 'meta', 'boton']);
+                }
+            }
+            else if (herramienta === 'boton' && esClick) {
+                if (!nivelActual.botones.some(b => b.x === gx && b.y >= gy && b.y <= gy+30)) {
+                    nivelActual.botones.push({ x: gx, y: gy + 24, w: TILE, h: 6, id: colorSeleccionado }); 
+                    borrarEn(gx, gy, ['pared', 'meta', 'puerta']);
+                } else {
+                    // Si ya existe, cicla color pero manteniendo ID lógica
+                    let btn = nivelActual.botones.find(b => b.x === gx && b.y >= gy && b.y <= gy+30);
+                    btn.id = (btn.id + 1) % 4;
+                }
+            }
+        }
+
+        function borrarEn(x, y, tipos) {
+            if (tipos.includes('pared')) nivelActual.paredes = nivelActual.paredes.filter(p => !(p.x === x && p.y === y));
+            if (tipos.includes('meta') && nivelActual.meta && nivelActual.meta.x === x && nivelActual.meta.y === y) nivelActual.meta = null;
+            if (tipos.includes('puerta')) nivelActual.puertas = nivelActual.puertas.filter(p => !(p.x === x && p.y === y));
+            if (tipos.includes('boton')) nivelActual.botones = nivelActual.botones.filter(b => !(b.x === x && (b.y >= y && b.y <= y+30)));
+        }
+
+        function togglePlayEdit() {
+            const btn = document.getElementById('btnSimular');
+            if (modo === 'EDITOR') {
+                modo = 'SIMULACION'; btn.innerText = "■ EDITAR"; btn.style.borderColor = "orange"; btn.style.color = "orange"; resetTotal();
+            } else {
+                modo = 'EDITOR'; btn.innerText = "▶ PROBAR"; btn.style.borderColor = "#FFD700"; btn.style.color = "#FFD700"; victoria = false; document.getElementById('mensajeVictoria').style.display = 'none';
+            }
+        }
+
+        const teclas = {};
+        window.addEventListener('keydown', e => {
+            teclas[e.code] = true;
+            if (modo === 'JUEGO' || modo === 'SIMULACION') {
+                if (e.code === 'ArrowDown' || e.code === 'KeyS') siguienteCubo();
+                if (e.code === 'Space') resetTotal();
+            }
+        });
+        window.addEventListener('keyup', e => teclas[e.code] = false);
+
+        function siguienteCubo() {
+            if (victoria) return;
+            if (fantasmas.length >= nivelActual.maxCubos - 1) { resetTotal(); return; }
+            if (grabacionActual.length > 0) fantasmas.push([...grabacionActual]);
+            resetJugador();
+        }
+
+        function resetTotal() {
+            fantasmas = []; resetJugador();
+            document.getElementById('mensajeVictoria').style.display = 'none'; victoria = false;
+        }
+        function resetJugador() {
+            grabacionActual = []; frame = 0;
+            jugador.x = 60; jugador.y = 0; jugador.vx = 0; jugador.vy = 0;
+        }
+
+        function checkColision(r1, r2) {
+            return (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y);
+        }
+
+        function actualizar() {
+            if (modo === 'EDITOR' || modo === 'MENU' || victoria) return;
+
+            // UPDATE BOTONES
+            estadoBotones = new Array(COLORES_LOGICOS.length).fill(false);
+            const checkBoton = (entidad) => {
+                nivelActual.botones.forEach(btn => {
+                    let sensor = {x: btn.x + 5, y: btn.y - 5, w: btn.w - 10, h: 10}; 
+                    if (checkColision(entidad, sensor)) estadoBotones[btn.id] = true;
+                });
+            };
+            checkBoton(jugador);
+            fantasmas.forEach(f => {
+                if (frame < f.length) checkBoton({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE});
+            });
+
+            // FISICAS
+            if (teclas['ArrowLeft'] || teclas['KeyA']) jugador.vx = -5;
+            else if (teclas['ArrowRight'] || teclas['KeyD']) jugador.vx = 5;
+            else jugador.vx = 0;
+
+            if ((teclas['ArrowUp'] || teclas['KeyW']) && jugador.enSuelo) { jugador.vy = -12; jugador.enSuelo = false; }
+            jugador.vy += GRAVEDAD;
+
+            // X
+            jugador.x += jugador.vx;
+            if (jugador.x < 0) jugador.x = 0; if (jugador.x + jugador.w > canvas.width) jugador.x = canvas.width - jugador.w;
+            
+            nivelActual.paredes.forEach(m => resolveCol(m, 'x'));
+            nivelActual.puertas.forEach(p => {
+                if (!estadoBotones[p.id]) resolveCol(p, 'x');
+            });
+            fantasmas.forEach(f => {
+                if (frame < f.length) resolveCol({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE}, 'x');
+            });
+
+            // Y
+            jugador.y += jugador.vy; jugador.enSuelo = false;
+            if (jugador.y + jugador.h > canvas.height) { jugador.y = canvas.height - jugador.h; jugador.vy = 0; jugador.enSuelo = true; }
+            if (jugador.y < 0) { jugador.y = 0; jugador.vy = 0; }
+
+            nivelActual.paredes.forEach(m => resolveCol(m, 'y'));
+            nivelActual.puertas.forEach(p => {
+                if (!estadoBotones[p.id]) resolveCol(p, 'y');
+            });
+            fantasmas.forEach(f => {
+                if (frame < f.length) resolveCol({x: f[frame].x, y: f[frame].y, w: TILE, h: TILE}, 'y');
+            });
+
+            // META & VICTORIA
+            if (nivelActual.meta && checkColision(jugador, nivelActual.meta)) {
+                if(!victoria) { // Evitar disparar múltiples veces
+                    victoria = true;
+                    document.getElementById('mensajeVictoria').style.display = 'block';
+                    if (indiceNivelJugado !== -1) {
+                        localStorage.setItem('timecube_nivel_' + indiceNivelJugado, 'true');
+                        // Auto-Next
+                        setTimeout(() => {
+                            if(indiceNivelJugado + 1 < NIVELES_DB.length) {
+                                cargarNivel(indiceNivelJugado + 1);
+                            } else {
+                                irMenuPrincipal();
+                            }
+                        }, 1500);
+                    }
+                }
+            }
+
+            grabacionActual.push({x: jugador.x, y: jugador.y});
+            frame++;
+            if(frame > DURACION_MAX) siguienteCubo();
+            
+            const info = document.getElementById('topInfo');
+            if (info.style.display !== 'none') info.innerText = `CUBOS: ${fantasmas.length + 1} / ${nivelActual.maxCubos}`;
+        }
+
+        function resolveCol(obs, eje) {
+            if (checkColision(jugador, obs)) {
+                if (eje === 'x') {
+                    if (jugador.vx > 0) jugador.x = obs.x - jugador.w;
+                    else if (jugador.vx < 0) jugador.x = obs.x + obs.w;
+                } else {
+                    if (jugador.vy > 0) { jugador.y = obs.y - jugador.h; jugador.enSuelo = true; jugador.vy = 0; }
+                    else if (jugador.vy < 0) { jugador.y = obs.y + obs.h; jugador.vy = 0; }
+                }
+            }
+        }
+
+        function dibujar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (nivelActual.texto) {
+                ctx.save(); ctx.font = "20px monospace"; ctx.fillStyle = "rgba(0, 255, 255, 0.2)"; 
+                ctx.textAlign = "center"; ctx.shadowColor = "cyan"; ctx.shadowBlur = 10;
+                ctx.fillText(nivelActual.texto, canvas.width / 2, 100); ctx.restore();
+            }
+
+            if (modo === 'EDITOR') {
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
+                for (let x = 0; x <= canvas.width; x += TILE) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+                for (let y = 0; y <= canvas.height; y += TILE) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+                ctx.stroke();
+            }
+
+            nivelActual.botones.forEach(b => {
+                ctx.fillStyle = COLORES_LOGICOS[b.id];
+                if (estadoBotones[b.id] && modo !== 'EDITOR') {
+                    ctx.fillRect(b.x + 2, b.y + 4, b.w - 4, 2);
+                } else {
+                    ctx.fillRect(b.x + 2, b.y, b.w - 4, b.h);
+                }
+            });
+
+            ctx.fillStyle = '#888';
+            nivelActual.paredes.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.w, p.h); ctx.strokeStyle = '#aaa'; ctx.strokeRect(p.x, p.y, p.w, p.h);
+            });
+
+            nivelActual.puertas.forEach(p => {
+                let abierto = estadoBotones[p.id] && modo !== 'EDITOR';
+                ctx.fillStyle = COLORES_LOGICOS[p.id];
+                if (abierto) {
+                    ctx.globalAlpha = 0.2; ctx.fillRect(p.x + 4, p.y, p.w - 8, p.h);
+                    ctx.globalAlpha = 1.0; ctx.strokeStyle = COLORES_LOGICOS[p.id]; ctx.strokeRect(p.x + 4, p.y, p.w - 8, p.h);
+                } else {
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(p.x + 10, p.y + 5, 10, p.h - 10);
+                }
+            });
+
+            if (nivelActual.meta) {
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.5)'; ctx.fillRect(nivelActual.meta.x, nivelActual.meta.y, TILE, TILE);
+                ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2; ctx.strokeRect(nivelActual.meta.x, nivelActual.meta.y, TILE, TILE);
+                
+                // TEXTO META CENTRADO
+                ctx.fillStyle = '#fff'; ctx.font = "10px monospace"; 
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText("META", nivelActual.meta.x + TILE/2, nivelActual.meta.y + TILE/2);
+            }
+
+            if (modo !== 'EDITOR') {
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
+                fantasmas.forEach(f => {
+                    if (frame < f.length) {
+                        ctx.fillRect(f[frame].x, f[frame].y, TILE, TILE); ctx.strokeStyle = 'cyan'; ctx.strokeRect(f[frame].x, f[frame].y, TILE, TILE);
+                    }
+                });
+                ctx.fillStyle = jugador.color;
+                ctx.fillRect(jugador.x, jugador.y, TILE, TILE); ctx.strokeStyle = '#000'; ctx.strokeRect(jugador.x, jugador.y, TILE, TILE);
+                ctx.fillStyle = 'orange'; ctx.fillRect(0, 0, (frame/DURACION_MAX) * canvas.width, 5);
+            }
+            requestAnimationFrame(bucle);
+        }
+
+        bucle(); function bucle() { actualizar(); dibujar(); }
+
+    </script>
+</body>
+</html>
